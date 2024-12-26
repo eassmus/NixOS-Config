@@ -1,127 +1,131 @@
 {
-    "position": "top",
-    "mod": "dock",
-    "exclusive": true,
-    "passthrough": false,
-    "gtk-layer-shell": true,
-    "height": 0,
-    "modules-left": [
-	"battery",
-	"network",	
-    ],
-    "modules-center": [ "clock" ],
-    "modules-right": [
-	"cpu",
-	"custom/integratedgpu",
-	"memory",	
-	"custom/gpu",
-	"custom/temp",
-	"custom/brightness",
-        "pulseaudio",
-        "pulseaudio#microphone",
-    ],
-    "cpu": {
-        "format": " {load:.0f}%",
-	"interval": 1,
-    },
-    "memory": {
-	"format": " {:>2}%",
-	"interval": 1,
-    },
-    "custom/gpu": {
-	"exec": "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits",
-        "format": "󰢮 {:>2}%",
-	"return-type": "",
-	"interval" : 1,
-	"tooltip" : false,
-    },
-    "custom/temp" : {
-	"exec": "head -c 2 /sys/class/thermal/thermal_zone0/temp",
-	"format": " {}",
-	"return-type": "",
-	"interval" :1,
-	"tooltip" : false,
-    },
-    "custom/integratedgpu": {
-	"exec": "cat /sys/class/graphics/fb0/device/gpu_busy_percent",
-	"format": "󰘚 {:>2}%",
-	"return-type": "",
-	"interval" : 1,
-	"tooltip" : false,
-    },
-    "custom/brightness": {
-	"exec": "bash ~/.config/waybar/scripts/get_brightness.sh",
-        "format": " {}%",
-	"return-type": "",
-	"interval" : 1,
-	"min-length" : 5,
-	"tooltip" : false,
-    },
-    "network": {
-	"interface": "wlp2s0",
-	"format-wifi": "  {essid:.17} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
-        "format-ethernet": "󰈁 {essid} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
-	"format-disconnected": "󱘖 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
-	"format": "󰤉 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
-  "format-disabled": "",
-	"interval" : 1,
-	"tooltip" : false,
-    },
-    "hyprland/workspaces": {
-       "persistent_workspaces": {
-            "1": []
-        }
-    },
-    "custom/kbbacklight" : {
-	"exec": "brightnessctl -d asus::kbd_backlight g",
-        "format": "  {}/3",
-	"return-type": "",
-	"interval" : 1,
-	"tooltip" : false,
-    },
-    "tray": {
-        "icon-size": 16,
-        "spacing": 10
-    },
-    "clock": {
-        "format": "{:%I:%M %p | %A | %m-%d-%Y}",
-        "min-length": 32,
-	"tooltip" : false,
-    },
-    "pulseaudio": {
-        "format": " {volume}%",
-        "tooltip": false,
-        "format-muted": " Muted",
-        "on-click": "pamixer -t",
-        "format-icons": {
-            "headphone": "",
-            "hands-free": "",
-            "headset": "",
-            "phone": "",
-            "portable": "",
-            "car": "",
-        },
-	"min-length": 7,
-    },
-    "pulseaudio#microphone": {
-        "format": "{format_source}",
-        "format-source": "🎙 {volume}%",
-        "format-source-muted": "🎙 Muted",
-        "on-click": "pamixer --default-source -t",
-	"min-length" : 8,
-    },
-    "battery": {
-	"bat": "BAT0",
-	"interval": 1,
-	"format": " {capacity}% | {time} | {power:.0f}W",
-  "format-plugged": "󰚥 {capacity}%",
-  "format-not-charging": "󰚥 {capacity}%",
-	"format-charging": " {capacity}% | {time} | {power:.0f}W",
-	"format-time": "{H}:{m}",
-	"states": {
-		"warning": 30,
-		"critical": 10,
-	},
-	"tooltip" : false,
+  "position": "top",
+  "mod": "dock",
+  "exclusive": true,
+  "passthrough": false,
+  "gtk-layer-shell": true,
+  "height": 0,
+  "modules-left": [
+    "battery",
+    "network"
+  ],
+  "modules-center": [
+    "clock"
+  ],
+  "modules-right": [
+    "cpu",
+    "custom/integratedgpu",
+    "memory",
+    "custom/gpu",
+    "custom/temp",
+    "custom/brightness",
+    "pulseaudio",
+    "pulseaudio#microphone"
+  ],
+  "cpu": {
+    "format": " {load:.0f}%",
+    "interval": 1
+  },
+  "memory": {
+    "format": " {:>2}%",
+    "interval": 1
+  },
+  "custom/gpu": {
+    "exec": "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits",
+    "format": "󰢮 {:>2}%",
+    "return-type": "",
+    "interval": 1,
+    "tooltip": false
+  },
+  "custom/temp": {
+    "exec": "head -c 2 /sys/class/thermal/thermal_zone0/temp",
+    "format": " {}",
+    "return-type": "",
+    "interval": 1,
+    "tooltip": false
+  },
+  "custom/integratedgpu": {
+    "exec": "cat /sys/class/graphics/fb0/device/gpu_busy_percent",
+    "format": "󰘚 {:>2}%",
+    "return-type": "",
+    "interval": 1,
+    "tooltip": false
+  },
+  "custom/brightness": {
+    "exec": "bash ~/.config/waybar/scripts/get_brightness.sh",
+    "format": " {}%",
+    "on-scroll-up": "bash ~/.config/hypr/scripts/brightness_change.sh 3",
+    "on-scroll-down": "bash ~/.config/hypr/scripts/brightness_change.sh -3",
+    "return-type": "",
+    "interval": 1,
+    "min-length": 5,
+    "tooltip": false
+  },
+  "network": {
+    "interface": "wlp2s0",
+    "format-wifi": "  | {essid:.15} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
+    "format-ethernet": "󰈁 | {essid:.15} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
+    "format-disconnected": "󱘖 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
+    "format": "󰤉 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
+    "format-disabled": "",
+    "interval": 1,
+    "tooltip": false 
+  },
+  "hyprland/workspaces": {
+    "persistent_workspaces": {
+      "1": []
     }
+  },
+  "custom/kbbacklight": {
+    "exec": "brightnessctl -d asus::kbd_backlight g",
+    "format": "  {}/3",
+    "return-type": "",
+    "interval": 1,
+    "tooltip": false
+  },
+  "tray": {
+    "icon-size": 16,
+    "spacing": 10
+  },
+  "clock": {
+    "format": "{:%I:%M %p | %A | %m-%d-%Y}",
+    "min-length": 32,
+    "tooltip": false
+  },
+  "pulseaudio": {
+    "format": " {volume}%",
+    "tooltip": false,
+    "format-muted": " Muted",
+    "on-click": "pamixer -t",
+    "format-icons": {
+      "headphone": "",
+      "hands-free": "",
+      "headset": "",
+      "phone": "",
+      "portable": "",
+      "car": ""
+    },
+    "min-length": 7
+  },
+  "pulseaudio#microphone": {
+    "format": "{format_source}",
+    "format-source": "🎙 {volume}%",
+    "format-source-muted": "🎙 Muted",
+    "on-click": "pamixer --default-source -t",
+    "min-length": 8
+  },
+  "battery": {
+    "bat": "BAT0",
+    "interval": 1,
+    "format": " {capacity}% | {time} | {power:.0f}W",
+    "format-plugged": "󰚥 {capacity}%",
+    "format-not-charging": "󰚥 {capacity}%",
+    "format-charging": " {capacity}% | {time} | {power:.0f}W",
+    "format-time": "{H}:{m}",
+    "states": {
+      "warning": 30,
+      "critical": 10
+    },
+    "tooltip": false
+  }
 }
