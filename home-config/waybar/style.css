@@ -1,0 +1,168 @@
+@define-color main-color #82aee8; 
+@define-color green-color #a6e3a1;
+@define-color pink-color #e9a6fd;
+@define-color warning-color #f3a611;
+@define-color red-color #f34646;
+@define-color bg-color #1e1e2e;
+
+* {
+  border: none;
+  border-radius: 0;
+  font-family:
+    Jetbrains Mono Nerd Font,
+    monospace;
+  font-weight: bold;
+  font-size: 22px;
+  min-height: 42px;
+}
+
+window#waybar {
+  background: rgba(21, 18, 27, 0);
+  color: @main-color;
+}
+
+tooltip {
+  background: @bg-color;
+  color: @main-color;
+  border-radius: 20px;
+  border: solid 6px transparent;
+  background: 
+    linear-gradient(to left, @bg-color, @bg-color) padding-box, 
+    linear-gradient(to bottom, @pink-color, @main-color) border-box;
+}
+
+#language,
+#custom-integratedgpu,
+#custom-gpu,
+#custom-temp,
+#custom-brightness,
+#custom-kbbacklight,
+#window,
+#clock,
+#battery,
+#pulseaudio,
+#network,
+#cpu,
+#memory,
+#backlight {
+  background: @bg-color;
+  padding: 0px 18px;
+  margin: 0px 0px;
+  margin-top: 20px;
+  margin-bottom: 0px;
+  color: @main-color;
+  border: solid 6px transparent;
+  background: 
+    linear-gradient(to left, @bg-color, @bg-color) padding-box, 
+    linear-gradient(to bottom, @pink-color, @main-color) border-box;
+}
+
+#custom-brightness {
+  margin-left: 10px;
+  border-radius: 20px 20px 20px 20px;
+  margin-right: 10px;
+}
+
+#custom-kbbacklight {
+  margin-right: 10px;
+  border-radius: 0px 20px 20px 0px;
+}
+
+#window {
+  margin-left: 60px;
+  margin-right: 60px;
+}
+
+#clock {
+  color: @pink-color;
+  border-radius: 20px 20px 20px 20px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+#network {
+  color: @warning-color;
+  border-radius: 20px 20px 20px 20px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+#network.disconnected {
+  color: @red-color;
+}
+
+#network.ethernet,
+#network.wifi {
+  color: @green-color;
+}
+
+#cpu {
+  border-radius: 20px 0px 0px 20px;
+  margin-left: 10px;
+  border-right: 0px;
+}
+
+#custom-gpu {
+  border-left: 0px;
+  border-right: 0px;
+}
+
+#custom-integratedgpu {
+  border-left: 0px;
+  border-right: 0px;
+}
+
+#memory {
+  border-left: 0px;
+  border-right: 0px;
+}
+
+#custom-temp {
+  border-radius: 0px 20px 20px 0px;
+  margin-right: 10px;
+  border-left: 0px
+}
+
+#pulseaudio {
+  color: @pink-color;
+  border-radius: 20px 0px 0px 20px;
+  margin-left: 10px;
+  border-right: 0px;
+}
+
+#pulseaudio.microphone {
+  border-radius: 0px 20px 20px 0px;
+  margin-left: 0px;
+  margin-right: 20px;
+  border-left: 0px;
+  border-right: solid 2px @main-color;
+  border: solid 6px transparent;
+  background: 
+    linear-gradient(to left, @bg-color, @bg-color) padding-box, 
+    linear-gradient(to bottom, @pink-color, @main-color) border-box;
+  border-left: 0px;
+}
+
+#battery {
+  color: @green-color;
+  border-radius: 20px 20px 20px 20px;
+  margin-right: 10px;
+  margin-left: 20px;
+}
+
+#battery.warning {
+  color: @warning-color;
+}
+
+#battery.critical {
+  color: @red-color;
+}
+
+#battery.charging {
+  color: @green-color;
+}
+
+#custom-weather {
+  border-radius: 0px 20px 20px 0px;
+  margin-left: 0px;
+}

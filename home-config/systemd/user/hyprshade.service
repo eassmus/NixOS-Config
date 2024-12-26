@@ -1,0 +1,6 @@
+[Unit]
+Description=Apply screen filter
+
+[Service]
+Type=oneshot
+ExecStart=/nix/store/i9lzdn6mw5jvn8nj6rj46wnq3cakcwfc-python3.11-hyprshade-3.2.1/bin/hyprshade auto

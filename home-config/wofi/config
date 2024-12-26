@@ -1,0 +1,11 @@
+single_click = true
+location = 1
+x = 1060
+y = 0
+height = 1306 
+width = 400
+insensitive = true
+hide_scroll = true
+matching = fuzzy
+prompt = App Launch
+no_actions = true
