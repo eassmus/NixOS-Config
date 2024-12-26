@@ -1,6 +1,6 @@
 { ... }:
 
 {
-    services.automatic-timezoned.enable = true;
-    time.hardwareClockInLocalTime = true;
+  services.automatic-timezoned.enable = true;
+  time.hardwareClockInLocalTime = true;
 }

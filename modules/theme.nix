@@ -3,7 +3,7 @@
 {
   environment.systemPackages = with pkgs; [
     gnome.adwaita-icon-theme # default gnome cursors
-    glib 
+    glib
     gsettings-desktop-schemas
     nwg-look
   ];

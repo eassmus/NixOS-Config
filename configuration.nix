@@ -2,14 +2,19 @@
 # your system. Help is available in the configuration.nix(5) man page, on
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      ./modules
-    ];
+  imports = [
+    # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+    ./modules
+  ];
 
   # networking.hostName = "nixos"; # Define your hostname.
   # Pick only one of the below networking options.
@@ -28,14 +33,14 @@
   users.users.pulsar = {
     isNormalUser = true;
     initialPassword = "pw123";
-    extraGroups = [ 
-     	"wheel" 
-        "qemu"
-        "kvm"
-        "libvirtd"
-        "networkmanager"
-	"video"
-    ]; 
+    extraGroups = [
+      "wheel"
+      "qemu"
+      "kvm"
+      "libvirtd"
+      "networkmanager"
+      "video"
+    ];
   };
 
   # List packages installed in system profile. To search, run:
@@ -77,4 +82,3 @@
   system.stateVersion = "24.05"; # Did you read the comment?
 
 }
-

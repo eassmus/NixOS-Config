@@ -1,10 +1,18 @@
-{ config, pkgs, lib , ... }:
-let 
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+let
   newPkgs = import <nixos-24.11> { };
-in {
+in
+{
   environment.systemPackages = with pkgs; [
+    nixfmt-rfc-style
+
     ly
-    mpv 
+    mpv
     bat
     hwinfo
     libinput

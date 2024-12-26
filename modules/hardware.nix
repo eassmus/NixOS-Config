@@ -1,10 +1,10 @@
-{ config, pkgs, ... }: 
+{ config, pkgs, ... }:
 
 {
- hardware = {
+  hardware = {
     bluetooth = {
-	enable = true;
-	powerOnBoot = false;
+      enable = true;
+      powerOnBoot = false;
     };
- };
+  };
 }

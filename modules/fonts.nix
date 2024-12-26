@@ -2,7 +2,7 @@
 
 {
   fonts.packages = with pkgs; [
-    font-awesome 
+    font-awesome
     jetbrains-mono
     hanazono
     noto-fonts
@@ -12,23 +12,23 @@
     (nerdfonts.override { fonts = [ "JetBrainsMono" ]; })
   ];
 
-fonts.fontconfig.defaultFonts = {
+  fonts.fontconfig.defaultFonts = {
     monospace = [
-	"JetBrainsMono Nerd Font Mono"
-	"Noto Sans Mono CJK SC"
-	"Noto Sans Mono CJK TC"
+      "JetBrainsMono Nerd Font Mono"
+      "Noto Sans Mono CJK SC"
+      "Noto Sans Mono CJK TC"
     ];
-#fc-list : family | grep 'Sans CJK'
+    #fc-list : family | grep 'Sans CJK'
     sansSerif = [
-	"DejaVu Sans"
-	"Noto Sans CJK SC"
-	"Noto Sans CJK TC"
+      "DejaVu Sans"
+      "Noto Sans CJK SC"
+      "Noto Sans CJK TC"
     ];
-# fc-list : family | grep 'Serif CJK'
+    # fc-list : family | grep 'Serif CJK'
     serif = [
-	"DejaVu Serif"
-	"Noto Serif CJK SC"
-	"Noto Serif CJK TC"
+      "DejaVu Serif"
+      "Noto Serif CJK SC"
+      "Noto Serif CJK TC"
     ];
-};
+  };
 }
