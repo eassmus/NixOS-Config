@@ -22,7 +22,10 @@
     };
     xserver = {
       enable = true;
-      xkb.layout = "us";
+      xkb = {
+        layout = "us";
+        variant = "";
+      };
     };
 
     displayManager = {
