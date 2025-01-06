@@ -21,6 +21,5 @@
     ./nvidia.nix
     ./python.nix
     ./cuda.nix
-    ./slack.nix
   ];
 }
