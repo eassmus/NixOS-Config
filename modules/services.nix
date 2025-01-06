@@ -29,9 +29,6 @@
     };
 
     displayManager = {
-      ly = {
-        enable = false;
-      };
       sddm.enable = true;
       sddm.theme = "${import ./sddm-theme.nix {
         inherit lib;

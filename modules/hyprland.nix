@@ -14,7 +14,6 @@
     wev
     kitty
     hyprshot
-    libnotify
     qt5.qtwayland
     qt6.qtwayland
     swayidle

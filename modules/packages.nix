@@ -9,14 +9,15 @@ let
 in
 {
   environment.systemPackages = with pkgs; [
+    slack
+    nodejs
     nixfmt-rfc-style
-
     ly
     mpv
     bat
     hwinfo
     libinput
-    slack
+    playerctl
     gtk3
     btop
     nvtopPackages.full

@@ -5,7 +5,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    (python3Full.withPackages (
+    (python3.withPackages (
       pkgs: with pkgs; [
         pip
         requests

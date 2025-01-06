@@ -63,8 +63,8 @@
   },
   "network": {
     "interface": "wlp2s0",
-    "format-wifi": "  | {essid:.15} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
-    "format-ethernet": "󰈁 | {essid:.15} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
+    "format-wifi": "  | {essid:.20} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
+    "format-ethernet": "󰈁 | {essid:.20} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
     "format-disconnected": "󱘖 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
     "format": "󰤉 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
     "format-disabled": "",
@@ -116,11 +116,11 @@
   },
   "battery": {
     "bat": "BAT0",
-    "interval": 1,
-    "format": " {capacity}% | {time} | {power:.0f}W",
+    "interval": 10,
+    "format": " {capacity}% | {time}",
     "format-plugged": "󰚥 {capacity}%",
     "format-not-charging": "󰚥 {capacity}%",
-    "format-charging": " {capacity}% | {time} | {power:.0f}W",
+    "format-charging": " {capacity}% | {time}",
     "format-time": "{H}:{m}",
     "states": {
       "warning": 30,
