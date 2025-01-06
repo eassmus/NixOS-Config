@@ -28,7 +28,7 @@ tooltip {
   border: solid 6px transparent;
   background: 
     linear-gradient(to left, @bg-color, @bg-color) padding-box, 
-    linear-gradient(to bottom, @pink-color, @main-color) border-box;
+    linear-gradient(to bottom, @main-color, @pink-color) border-box;
 }
 
 #language,
