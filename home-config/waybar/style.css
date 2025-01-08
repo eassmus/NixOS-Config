@@ -163,6 +163,10 @@ tooltip {
   color: @green-color;
 }
 
+#battery.bat2 {
+  margin-left: 10px;
+}
+
 #custom-weather {
   border-radius: 0px 20px 20px 0px;
   margin-left: 0px;

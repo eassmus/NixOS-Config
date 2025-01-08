@@ -7,6 +7,7 @@
   "height": 0,
   "modules-left": [
     "battery",
+    "battery#bat2",
     "network"
   ],
   "modules-center": [
@@ -146,5 +147,14 @@
       "critical": 10
     },
     "tooltip": false
+  },
+  "battery#bat2": {
+    "bat": "hidpp_battery_0",
+    "interval": 1,
+    "format": "󰍽 {capacity}%",
+    "states": {
+      "warning": 30,
+      "critical": 10
+    }
   }
 }
