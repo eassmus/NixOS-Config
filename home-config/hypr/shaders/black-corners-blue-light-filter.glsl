@@ -10,9 +10,8 @@ uniform sampler2D tex;
 uniform vec2 resolution;
 
 const float temperature = 2600.0;
-const float temperatureStrength = 1.0;
+const float temperatureStrength = 0.6;
 
-#define WithQuickAndDirtyLuminancePreservation
 const float LuminancePreservationFactor = 1.0;
 
 vec3 colorTemperatureToRGB(const in float temperature) {
@@ -51,13 +50,9 @@ void main() {
     color = vec3(0.0, 0.0, 0.0);
   }
 
-  #ifdef WithQuickAndDirtyLuminancePreservation
-  color *= mix(1.0, dot(color, vec3(0.2126, 0.7152, 0.0722)) / max(dot(color, vec3(0.2126, 0.7152, 0.0722)), 1e-5), LuminancePreservationFactor);
-  #endif
-
   color = mix(color, color * colorTemperatureToRGB(temperature), temperatureStrength);
-
-  vec4 outCol = vec4(color, pixColor[3]);
+  color = vec3(color[0], color[1], color[2] * 0.7);
+  vec4 outCol = vec4(0.75 * color, pixColor[3]);
 
   gl_FragColor = outCol;
 }

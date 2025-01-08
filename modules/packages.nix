@@ -9,6 +9,7 @@ let
 in
 {
   environment.systemPackages = with pkgs; [
+    gimp
     slack
     nodejs
     nixfmt-rfc-style
