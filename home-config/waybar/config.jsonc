@@ -70,7 +70,8 @@
     "format": "󰤉 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
     "format-disabled": "",
     "interval": 1,
-    "tooltip": false 
+    "tooltip": true,
+    "tooltip-format": " {essid:.20} | {signalStrength}% "
   },
   "hyprland/workspaces": {
     "persistent_workspaces": {
@@ -146,7 +147,8 @@
       "warning": 30,
       "critical": 10
     },
-    "tooltip": false
+    "tooltip": true,
+    "tooltip-format": " Power: {power:.0f}W "
   },
   "battery#bat2": {
     "bat": "hidpp_battery_0",
