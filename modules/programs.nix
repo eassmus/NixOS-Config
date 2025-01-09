@@ -39,7 +39,7 @@
     };
 
     tmux = {
-      enable = true;
+      enable = false;
       escapeTime = 0;
 
       plugins = with pkgs; [
@@ -89,7 +89,7 @@
       '';
     };
 
-    zsh.enable = true;
+    zsh.enable = false;
     mtr.enable = true;
 
     light.enable = true;
