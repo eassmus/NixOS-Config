@@ -1,7 +1,6 @@
 { config, pkgs, ... }:
 
 {
-
   xdg.portal = {
     enable = true;
     wlr.enable = false;

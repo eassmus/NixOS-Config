@@ -6,8 +6,6 @@
 }:
 
 {
-  imports = [ <nixos-unstable/nixos/modules/services/display-managers/ly.nix> ];
-
   services = {
     dbus.enable = true;
     picom.enable = true;
