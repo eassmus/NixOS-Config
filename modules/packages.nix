@@ -4,9 +4,6 @@
   lib,
   ...
 }:
-let
-  newPkgs = import <nixos-24.11> { };
-in
 {
   environment.systemPackages = with pkgs; [
     gimp
@@ -32,8 +29,8 @@ in
     eza
     ripgrep
     vim
-    newPkgs.neovim
-    newPkgs.dotnetCorePackages.sdk_8_0_3xx
+    neovim
+    dotnetCorePackages.sdk_8_0_3xx
     fzf
     git
     gh
