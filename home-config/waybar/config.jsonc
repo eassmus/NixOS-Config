@@ -7,7 +7,6 @@
   "height": 0,
   "modules-left": [
     "battery",
-    "battery#bat2",
     "network"
   ],
   "modules-center": [
