@@ -22,6 +22,9 @@
     "pulseaudio",
     "pulseaudio#microphone"
   ],
+  "upower": {
+    "format": "{percentage}%"
+  },
   "cpu": {
     "format": " {load:.0f}%",
     "interval": 1
@@ -147,7 +150,8 @@
       "critical": 10
     },
     "tooltip": true,
-    "tooltip-format": " Power: {power:.0f}W "
+    "tooltip-format": " Power: {power:.0f}W ",
+    "on-click": "wlogout"
   },
   "battery#bat2": {
     "bat": "hidpp_battery_0",

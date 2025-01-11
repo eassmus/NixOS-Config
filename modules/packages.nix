@@ -6,6 +6,10 @@
 }:
 {
   environment.systemPackages = with pkgs; [
+    ffmpeg
+    protonvpn-gui
+    ffmpegthumbnailer
+    mathpix-snipping-tool
     gimp
     slack
     nodejs

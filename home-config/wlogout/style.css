@@ -1,28 +1,31 @@
 * {
   background-image: none;
+  font-size: 40px;
+  font-family: 
+    Jetbrains Mono Nerd Font,
+    monospace;
+  font-weight: bold;
 }
 
 window {
-  background-color: rgba(36, 39, 58, 0.9);
+  background-color: rgba(0,0,0,0);
 }
 
 button {
-  margin: 8px;
-  color: #cad3f5;
-  background-color: #363a4f;
-  border-style: solid;
-  border-width: 2px;
+  margin: 20px;
+  border-radius: 20px;
+  color: #82aee8;
+  border: solid 6px #82aee8;
+  background: rgba(30, 30, 46, 1);
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 25%;
+  background-size: 20%;
 }
 
 button:active,
 button:focus,
 button:hover {
-  color: #8bd5ca;
-  background-color: #24273a;
-  outline-style: none;
+  color: #e9a6fd;
 }
 
 #lock {
