@@ -97,12 +97,12 @@
     "tooltip": true,
     "interval": 60,
     "tooltip-format": "{calendar}",
+    "on-click-middle": "bash ~/.config/hypr/scripts/wofi_toggle.sh",
 	  "calendar": {
 		  "mode"          : "month",
 		  "mode-mon-col"  : 3,
 		  "weeks-pos"     : "",
 		  "on-scroll"     : 1,
-		  "on-click-right": "mode",
 		  "format": {
 			  "months":     "<span color='#82aee8' ><b>{}</b></span>",
 			  "days":       "<span><b>{}</b></span>",
