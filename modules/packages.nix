@@ -6,6 +6,7 @@
 }:
 {
   environment.systemPackages = with pkgs; [
+    cava
     geeqie
     ffmpeg
     protonvpn-gui
