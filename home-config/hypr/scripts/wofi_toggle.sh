@@ -1,2 +1,4 @@
 pkill wofi
-wofi --show drun 
+if [ $? -eq 1 ]; then
+  wofi --show drun
+fi

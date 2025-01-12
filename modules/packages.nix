@@ -6,6 +6,7 @@
 }:
 {
   environment.systemPackages = with pkgs; [
+    geeqie
     ffmpeg
     protonvpn-gui
     ffmpegthumbnailer
