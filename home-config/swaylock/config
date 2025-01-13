@@ -5,37 +5,39 @@ screenshots
 
 image=~/.config/wallpapers/mountain.jpg
 
-effect-blur=14x14
+effect-blur=20x20
 font=JetBrains Mono
-indicator-radius=160
-indicator-thickness=16
+indicator-radius=200
+indicator-thickness=20
 timestr=%I:%M %p
 datestr=%F
 
+ignore-empty-password
+
 hide-keyboard-layout
 
-line-color=#000000
-separator-color=#000000
+line-color=#1e1e2e
+separator-color=#1e1e2e
 
 bs-hl-color=#f34646
 
 indicator-thickness=15
-inside-color=#82aee8
-ring-color=#e9a6fd
-key-hl-color=#a6e3a1
-text-color=#ffffff
-layout-text-color=#ffffff
-layout-bg-color=#82aee800
-text-caps-lock-color=#ffffff
+inside-color=#1e1e2e
+ring-color=#82aee8
+key-hl-color=#e9a6fd
+text-color=#e9a6fd
+layout-text-color=#82aee8
+layout-bg-color=#1e1e2e00
+text-caps-lock-color=#82aee8
 
-inside-clear-color=#82aee8
-ring-clear-color=#e9a6fd
-text-clear-color=#ffffff
+inside-clear-color=#1e1e2e
+ring-clear-color=#82aee8
+text-clear-color=#e9a6fd
 
-inside-ver-color=#82aee8
-ring-ver-color=#e9a6fd
-text-ver-color=#ffffff
+inside-ver-color=#1e1e2e
+ring-ver-color=#82aee8
+text-ver-color=#e9a6fd
 
-inside-wrong-color=#f34646
-ring-wrong-color=#e9a6fd
-text-wrong-color=#ffffff
+inside-wrong-color=#1e1e2e
+ring-wrong-color=#82aee8
+text-wrong-color=#e9a6fd
