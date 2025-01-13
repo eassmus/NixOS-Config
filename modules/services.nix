@@ -20,7 +20,7 @@
       openFirewall = true;
     };
     xserver = {
-      enable = true;
+      enable = false;
       xkb = {
         layout = "us";
         variant = "";
@@ -28,11 +28,14 @@
     };
 
     displayManager = {
-      sddm.enable = true;
-      sddm.theme = "${import ./sddm-theme.nix {
-        inherit lib;
-        inherit pkgs;
-      }}";
+      sddm = {
+        enable = true;
+        wayland.enable = true;
+        theme = "${import ./sddm-theme.nix {
+          inherit lib;
+          inherit pkgs;
+        }}";
+      };
     };
     gnome.gnome-keyring.enable = true;
   };
