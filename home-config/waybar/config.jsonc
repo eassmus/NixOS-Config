@@ -48,7 +48,7 @@
     "tooltip": false
   },
   "custom/integratedgpu": {
-    "exec": "cat /sys/class/graphics/fb0/device/gpu_busy_percent",
+    "exec": "~/.config/waybar/scripts/get_integrated_gpu_busy.sh",
     "format": "󰘚 {:>2}%",
     "return-type": "",
     "interval": 1,
