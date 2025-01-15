@@ -5,7 +5,9 @@
   ...
 }:
 {
+
   environment.systemPackages = with pkgs; [
+    zoom-us
     cava
     geeqie
     ffmpeg

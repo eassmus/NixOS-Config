@@ -21,5 +21,6 @@
     ./nvidia.nix
     ./python.nix
     ./cuda.nix
+    ./openrgb.nix
   ];
 }
