@@ -7,6 +7,8 @@
 {
 
   environment.systemPackages = with pkgs; [
+    fanctl
+    fan2go
     zoom-us
     cava
     geeqie

@@ -43,7 +43,7 @@ tooltip {
 #battery,
 #pulseaudio,
 #network,
-#cpu,
+#custom-cpu,
 #memory,
 #backlight {
   background: @bg-color;
@@ -97,7 +97,7 @@ tooltip {
   color: @green-color;
 }
 
-#cpu {
+#custom-cpu {
   border-radius: 20px 0px 0px 20px;
   margin-left: 10px;
   border-right: 0px;

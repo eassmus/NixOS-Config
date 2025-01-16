@@ -13,7 +13,7 @@
     "clock"
   ],
   "modules-right": [
-    "cpu",
+    "custom/cpu",
     "custom/integratedgpu",
     "memory",
     "custom/gpu",
@@ -25,9 +25,12 @@
   "upower": {
     "format": "{percentage}%"
   },
-  "cpu": {
-    "format": " {load:.0f}%",
-    "interval": 1
+  "custom/cpu": {
+    "exec": "~/.config/waybar/scripts/cpu_usage.sh",
+    "format": " {}%",
+    "return-type": "",
+    "interval": 1,
+    "tooltip": false
   },
   "memory": {
     "format": " {:>2}%",
@@ -55,10 +58,10 @@
     "tooltip": false
   },
   "custom/brightness": {
-    "exec": "bash ~/.config/waybar/scripts/get_brightness.sh",
+    "exec": "~/.config/waybar/scripts/get_brightness.sh",
     "format": " {}%",
-    "on-scroll-up": "bash ~/.config/hypr/scripts/brightness_change.sh 3",
-    "on-scroll-down": "bash ~/.config/hypr/scripts/brightness_change.sh -3",
+    "on-scroll-up": "~/.config/hypr/scripts/brightness_change.sh 3",
+    "on-scroll-down": "~/.config/hypr/scripts/brightness_change.sh -3",
     "return-type": "",
     "interval": 1,
     "min-length": 5,
@@ -97,7 +100,7 @@
     "tooltip": true,
     "interval": 60,
     "tooltip-format": "{calendar}",
-    "on-click-middle": "bash ~/.config/hypr/scripts/wofi_toggle.sh",
+    "on-click-middle": "~/.config/hypr/scripts/wofi_toggle.sh",
 	  "calendar": {
 		  "mode"          : "month",
 		  "mode-mon-col"  : 3,
