@@ -7,6 +7,8 @@
 {
 
   environment.systemPackages = with pkgs; [
+    vlc
+    valgrind
     fanctl
     fan2go
     zoom-us

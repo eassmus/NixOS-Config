@@ -142,7 +142,7 @@
   },
   "battery": {
     "bat": "BAT0",
-    "interval": 10,
+    "interval": 1,
     "format": " {capacity}% | {time}",
     "format-plugged": "󰚥 {capacity}%",
     "format-not-charging": "󰚥 {capacity}%",

@@ -1,5 +1,3 @@
-#!/usr/bin/bash
-
 declare -i scalar="$1"
 
 read float < <(light -G)
@@ -15,8 +13,6 @@ if [[ $CURR -lt $cutoff ]]; then
 else 
   change=$((scalar))
 fi
-
-
 
 neg=-1
 zero=0
