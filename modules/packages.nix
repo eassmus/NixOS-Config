@@ -7,6 +7,7 @@
 {
 
   environment.systemPackages = with pkgs; [
+    trash-cli
     vlc
     valgrind
     fanctl
