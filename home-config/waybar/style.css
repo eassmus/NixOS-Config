@@ -37,6 +37,9 @@ tooltip {
 #custom-temp,
 #custom-brightness,
 #custom-kbbacklight,
+#custom-wsleft,
+#custom-wsmiddle,
+#custom-wsright,
 #window,
 #clock,
 #mpris,
@@ -72,6 +75,31 @@ tooltip {
 #window {
   margin-left: 60px;
   margin-right: 60px;
+}
+
+#custom-wsleft {
+  margin-left: 10px;
+  border-radius: 20px 0px 0px 20px;
+  border-right: 0px;
+  padding-left: 12px;
+  padding-right: 10px;
+}
+
+#custom-wsmiddle {
+  margin-left: 0px;
+  margin-right: 0px;
+  border-left: 0px;
+  border-right: 0px;
+  padding-right: 0px;
+  padding-left: 6px;
+}
+
+#custom-wsright {
+  margin-right: 10px;
+  border-radius: 0px 20px 20px 0px;
+  border-left: 0px;
+  padding-right: 18px;
+  padding-left: 10px;
 }
 
 #clock {

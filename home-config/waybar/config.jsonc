@@ -7,7 +7,10 @@
   "height": 0,
   "modules-left": [
     "battery",
-    "network"
+    "network",
+    "custom/wsleft",
+    "custom/wsmiddle",
+    "custom/wsright"
   ],
   "modules-center": [
     "clock"
@@ -24,6 +27,23 @@
   ],
   "upower": {
     "format": "{percentage}%"
+  },
+  "custom/wsleft": {
+    "tooltip": false,
+    "format": "",
+    "on-click" : "hyprctl dispatch workspace -1"
+  },
+  "custom/wsmiddle" : {
+    "tooltip": false,
+    "exec": "hyprctl activeworkspace -j | grep '^    \"name\": \"' | cut -c14",
+    "return-type": "",
+    "format": "{}",
+    "interval": 1
+  },
+  "custom/wsright" : {
+    "tooltip": false,
+    "format": "",
+    "on-click" : "hyprctl dispatch workspace +1"
   },
   "custom/cpu": {
     "exec": "~/.config/waybar/scripts/cpu_usage.sh",
