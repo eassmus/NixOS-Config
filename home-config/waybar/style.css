@@ -83,6 +83,7 @@ tooltip {
   border-right: 0px;
   padding-left: 12px;
   padding-right: 10px;
+  color: @pink-color;
 }
 
 #custom-wsmiddle {
@@ -100,6 +101,7 @@ tooltip {
   border-left: 0px;
   padding-right: 18px;
   padding-left: 10px;
+  color: @pink-color;
 }
 
 #clock {
