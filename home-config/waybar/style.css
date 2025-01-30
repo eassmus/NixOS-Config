@@ -48,6 +48,7 @@ tooltip {
 #network,
 #custom-cpu,
 #memory,
+#custom-fan_mode,
 #backlight {
   background: @bg-color;
   padding: 0px 18px;
@@ -149,6 +150,11 @@ tooltip {
 }
 
 #custom-temp {
+  border-left: 0px;
+  border-right: 0px;
+}
+
+#custom-fan_mode {
   border-radius: 0px 20px 20px 0px;
   margin-right: 10px;
   border-left: 0px

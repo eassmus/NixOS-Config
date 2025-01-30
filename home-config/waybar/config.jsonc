@@ -17,14 +17,19 @@
   ],
   "modules-right": [
     "custom/cpu",
-    "custom/integratedgpu",
     "memory",
     "custom/gpu",
     "custom/temp",
+    "custom/fan_mode",
     "custom/brightness",
     "pulseaudio",
     "pulseaudio#microphone"
   ],
+  "custom/fan_mode": {
+    "exec" : "asusctl profile --profile-get | tail -n +2 | cut -c 19-19",
+    "format" : "{}",
+    "interval": 1
+  },
   "upower": {
     "format": "{percentage}%"
   },
