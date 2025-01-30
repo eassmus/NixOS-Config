@@ -14,6 +14,11 @@
     spice-vdagentd.enable = true;
     blueman.enable = true;
     printing.enable = true;
+    asusd = {
+      enable = true;
+      enableUserService = true;
+    };
+    supergfxd.enable = true;
     avahi = {
       enable = true;
       nssmdns4 = true;

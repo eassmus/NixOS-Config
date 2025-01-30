@@ -7,6 +7,9 @@
 {
 
   environment.systemPackages = with pkgs; [
+    obs-studio
+    asusctl
+    bc
     trash-cli
     vlc
     valgrind

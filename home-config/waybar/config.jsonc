@@ -47,6 +47,7 @@
   },
   "custom/cpu": {
     "exec": "~/.config/waybar/scripts/cpu_usage.sh",
+    "on-click": "kitty -e btop",
     "format": " {}%",
     "return-type": "",
     "interval": 1,
@@ -54,10 +55,12 @@
   },
   "memory": {
     "format": " {:>2}%",
+    "on-click": "kitty -e btop",
     "interval": 1
   },
   "custom/gpu": {
     "exec": "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits",
+    "on-click": "kitty -e nvtop",
     "format": "󰢮 {:>2}%",
     "return-type": "",
     "interval": 1,
@@ -65,6 +68,7 @@
   },
   "custom/temp": {
     "exec": "head -c 2 /sys/class/thermal/thermal_zone0/temp",
+    "on-click": "kitty -e btop",
     "format": " {}",
     "return-type": "",
     "interval": 1,
@@ -72,6 +76,7 @@
   },
   "custom/integratedgpu": {
     "exec": "~/.config/waybar/scripts/get_integrated_gpu_busy.sh",
+    "on-click": "kitty -e nvtop",
     "format": "󰘚 {:>2}%",
     "return-type": "",
     "interval": 1,
@@ -82,6 +87,7 @@
     "format": " {}%",
     "on-scroll-up": "~/.config/hypr/scripts/brightness_change.sh 3",
     "on-scroll-down": "~/.config/hypr/scripts/brightness_change.sh -3",
+    "on-click-middle": "light -S 0",
     "return-type": "",
     "interval": 1,
     "min-length": 5,
