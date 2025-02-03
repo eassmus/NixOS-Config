@@ -4,3 +4,6 @@
 
 2025/01/28 (21:09:01) | ===> btop++ v.1.4.0
 2025/01/28 (21:09:01) | ERROR: Couldn't determine terminal size of "STDOUT_FILENO"!
+
+2025/02/02 (18:23:08) | ===> btop++ v.1.4.0
+2025/02/02 (18:23:08) | ERROR: Exception during Config::unlock() : unordered_map::at

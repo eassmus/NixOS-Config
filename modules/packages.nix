@@ -7,26 +7,24 @@
 {
 
   environment.systemPackages = with pkgs; [
+    (llama-cpp.override { cudaSupport = true; })
+    qrrs
+    jq
     obs-studio
     asusctl
     bc
     trash-cli
     vlc
     valgrind
-    fanctl
-    fan2go
     zoom-us
     cava
-    geeqie
     ffmpeg
-    protonvpn-gui
     ffmpegthumbnailer
     mathpix-snipping-tool
     gimp
     slack
     nodejs
     nixfmt-rfc-style
-    ly
     mpv
     bat
     hwinfo
@@ -42,8 +40,6 @@
     rustup
     rustc
     gnumake
-    eza
-    ripgrep
     vim
     neovim
     dotnetCorePackages.sdk_8_0_3xx
@@ -72,9 +68,6 @@
     xdg-desktop-portal-wlr
     zip
     firefox
-    tree
-    lf
-    zoxide
   ];
 
   environment.sessionVariables = rec {

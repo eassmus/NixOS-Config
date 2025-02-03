@@ -8,6 +8,7 @@
     (python3.withPackages (
       pkgs: with pkgs; [
         pip
+        conda
         requests
         setuptools
         notebook

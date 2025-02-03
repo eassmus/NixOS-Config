@@ -12,5 +12,5 @@
   boot.loader.grub.font = "${pkgs.jetbrains-mono}/share/fonts/truetype/JetBrainsMono-Bold.ttf";
   boot.loader.grub.fontSize = 32;
   boot.loader.timeout = -1;
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_6_12;
 }
