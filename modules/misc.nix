@@ -8,5 +8,6 @@
 
   environment.shellAliases = {
     ds = "echo 'Going to DeepSeek DIR' && cd ~/Projects/WN25/LocalDeepSeek/ && nix-shell";
+    e = "nvim";
   };
 }

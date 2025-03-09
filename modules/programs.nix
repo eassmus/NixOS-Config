@@ -12,12 +12,17 @@
   };
 
   programs = {
+    starship = {
+      enable = true;
+    };
     hyprland = {
       enable = true;
 
       xwayland = {
         enable = true;
       };
+
+      withUWSM = false;
 
       portalPackage = pkgs.xdg-desktop-portal-hyprland;
     };
@@ -94,4 +99,7 @@
     light.enable = true;
   };
 
+  environment.sessionVariables = {
+    STARSHIP_CONFIG = "~/.config/starship.toml";
+  };
 }

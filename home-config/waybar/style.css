@@ -121,6 +121,7 @@ tooltip {
 
 #network.disconnected {
   color: @red-color;
+  padding-right: 12px;
 }
 
 #network.ethernet,

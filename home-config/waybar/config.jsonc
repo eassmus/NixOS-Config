@@ -17,17 +17,15 @@
   ],
   "modules-right": [
     "custom/cpu",
-    "memory",
     "custom/gpu",
     "custom/temp",
     "custom/fan_mode",
-    "custom/brightness",
     "pulseaudio",
     "pulseaudio#microphone"
   ],
   "custom/fan_mode": {
-    "exec" : "asusctl profile --profile-get | tail -n +2 | cut -c 19-19",
-    "format" : "{}",
+    "exec" : "asusctl profile --profile-get | tail -n +2 | cut -c 19-19 | /home/pulsar/.config/waybar/scripts/fan-speed.sh",
+    "format" : "{} ",
     "interval": 1
   },
   "upower": {
@@ -36,7 +34,8 @@
   "custom/wsleft": {
     "tooltip": false,
     "format": "",
-    "on-click" : "hyprctl dispatch workspace -1"
+    "on-click" : "hyprctl dispatch workspace -1",
+    "on-click-right" : "hyprctl dispatch workspace -2"
   },
   "custom/wsmiddle" : {
     "tooltip": false,
@@ -48,7 +47,8 @@
   "custom/wsright" : {
     "tooltip": false,
     "format": "",
-    "on-click" : "hyprctl dispatch workspace +1"
+    "on-click" : "hyprctl dispatch workspace +1",
+    "on-click-right" : "hyprctl dispatch workspace +2"
   },
   "custom/cpu": {
     "exec": "~/.config/waybar/scripts/cpu_usage.sh",
@@ -100,14 +100,15 @@
   },
   "network": {
     "interface": "wlp2s0",
-    "format-wifi": "  | {essid:.20} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
-    "format-ethernet": "󰈁 | {essid:.20} | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
-    "format-disconnected": "󱘖 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
+    "format-wifi": "  | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
+    "format-ethernet": "󰈁 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
+    "format-disconnected": "󱘖 ", 
     "format": "󰤉 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
     "format-disabled": "",
     "interval": 1,
     "tooltip": true,
-    "tooltip-format": " {essid:.20} | {signalStrength}% "
+    "tooltip-format": " {essid:.20} | {signalStrength}% ",
+    "on-click": "kitty -e nmtui"
   },
   "hyprland/workspaces": {
     "persistent_workspaces": {

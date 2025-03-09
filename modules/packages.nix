@@ -8,6 +8,8 @@
 
   environment.systemPackages = with pkgs; [
     (llama-cpp.override { cudaSupport = true; })
+    timg
+    feh
     qrrs
     jq
     obs-studio
@@ -68,6 +70,7 @@
     xdg-desktop-portal-wlr
     zip
     firefox
+    ripgrep
   ];
 
   environment.sessionVariables = rec {
