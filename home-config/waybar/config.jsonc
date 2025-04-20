@@ -25,8 +25,11 @@
   ],
   "custom/fan_mode": {
     "exec" : "asusctl profile --profile-get | tail -n +2 | cut -c 19-19 | /home/pulsar/.config/waybar/scripts/fan-speed.sh",
+    "tooltip": false,
     "format" : "{} ",
-    "interval": 1
+    "interval": 1,
+    "on-click": "asusctl profile --next",
+    "on-click-right": "asusctl profile --next && asusctl profile --next"
   },
   "upower": {
     "format": "{percentage}%"
