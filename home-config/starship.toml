@@ -1,5 +1,6 @@
 format = """
 [ ](#E9A6FD)\
+$nix_shell\
 $time\
 [](fg:#E9A6FD)\
 $directory\
@@ -33,13 +34,17 @@ truncation_symbol = "󰇘/"
 "Wallpapers" = " "
 "Recordings" = "󰎁 "
 "~" = " "
-"src" = "󰉋 "
 "Temp" = " "
 # Keep in mind that the order matters. For example:
 # "Important Documents" = " 󰈙 "
 # will not be replaced, because "Documents" was already substituted before.
 # So either put "Important Documents" before "Documents" or use the substituted version:
 # "Important 󰈙 " = " 󰈙 "
+
+[nix_shell]
+symbol = ""
+style = "bold fg:#82AEE8"
+format = '[ $symbol ]($style)'
 
 [c]
 symbol = " "
