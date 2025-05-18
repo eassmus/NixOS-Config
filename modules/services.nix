@@ -7,6 +7,7 @@
 
 {
   services = {
+    flatpak.enable = true;
     upower.enable = true;
     dbus.enable = true;
     picom.enable = true;

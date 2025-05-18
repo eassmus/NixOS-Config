@@ -3,15 +3,23 @@
 {
   xdg.portal = {
     enable = true;
-    wlr.enable = false;
-    xdgOpenUsePortal = false;
+    #wlr.enable = false;
+    #xdgOpenUsePortal = false;
     extraPortals = [
       pkgs.xdg-desktop-portal-hyprland
       pkgs.xdg-desktop-portal-gtk
+      pkgs.xdg-desktop-portal-kde
     ];
   };
 
   programs = {
+    thunar = {
+      enable = true;
+      plugins = with pkgs.xfce; [
+        thunar-archive-plugin
+        thunar-volman
+      ];
+    };
     starship = {
       enable = true;
     };
@@ -21,9 +29,6 @@
       xwayland = {
         enable = true;
       };
-
-      withUWSM = false;
-
       portalPackage = pkgs.xdg-desktop-portal-hyprland;
     };
     nix-ld.enable = true;
@@ -100,6 +105,6 @@
   };
 
   environment.sessionVariables = {
-    STARSHIP_CONFIG = "~/.config/starship.toml";
+    STARSHIP_CONFIG = "/home/pulsar/NixOS-Config/home-config/starship.toml";
   };
 }

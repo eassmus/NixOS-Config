@@ -7,7 +7,8 @@
 {
 
   environment.systemPackages = with pkgs; [
-    (llama-cpp.override { cudaSupport = true; })
+    #(llama-cpp.override { cudaSupport = true; })
+    hotspot
     timg
     feh
     qrrs
@@ -18,7 +19,6 @@
     trash-cli
     vlc
     valgrind
-    zoom-us
     cava
     ffmpeg
     ffmpegthumbnailer
@@ -40,7 +40,6 @@
     vscode
     cargo
     rustup
-    rustc
     gnumake
     vim
     neovim
@@ -65,7 +64,7 @@
     openssl.dev
     pkg-config
     wget
-    xfce.thunar
+    #xfce.thunar
     xdg-desktop-portal-gtk
     xdg-desktop-portal-wlr
     zip
