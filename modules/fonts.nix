@@ -8,8 +8,7 @@
     noto-fonts
     noto-fonts-extra
     noto-fonts-cjk-sans
-
-    (nerdfonts.override { fonts = [ "JetBrainsMono" ]; })
+    nerd-fonts.jetbrains-mono
   ];
 
   fonts.fontconfig.defaultFonts = {
