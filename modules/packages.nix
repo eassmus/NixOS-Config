@@ -42,7 +42,8 @@
     rustup
     gnumake
     vim
-    neovim
+    nvim-pkg
+    neovide
     dotnetCorePackages.sdk_8_0_3xx
     fzf
     git

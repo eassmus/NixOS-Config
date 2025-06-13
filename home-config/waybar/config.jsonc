@@ -103,6 +103,7 @@
   },
   "network": {
     "interface": "wlp2s0",
+    "interface-ethernet": "enp4s0f3u1",
     "format-wifi": "  | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
     "format-ethernet": "󰈁 | {bandwidthUpBits:>5} 󰕒 | {bandwidthDownBits:>5} 󰇚",
     "format-disconnected": "󱘖 ", 
