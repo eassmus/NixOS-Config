@@ -17,6 +17,8 @@
         ipython
         jupyterlab
         virtualenv
+        ruff
+        basedpyright
       ]
     ))
     jupyter-all

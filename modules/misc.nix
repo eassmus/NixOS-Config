@@ -7,7 +7,26 @@
   };
 
   environment.shellAliases = {
-    ds = "echo 'Going to DeepSeek DIR' && cd ~/Projects/WN25/LocalDeepSeek/ && nix-shell";
+    l = "eza -lah";
+    ls = "eza";
+    tree = "eza --tree --git-ignore";
+
+    c = "clear";
+    h = "history";
+    mk = "(){ mkdir -p $1 }";
+
+    cdp = "pwd | wl-copy";
+
+    cp = "cp -i";
+    mv = "mv -i";
+
+    realrm = "rm";
+
+    rm = "trash";
+
+    nfu = "sudo nix flake update";
+    nrs = "sudo nixos-rebuild switch";
+
     e = "nvim";
   };
 }

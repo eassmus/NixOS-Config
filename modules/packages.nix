@@ -15,14 +15,16 @@
     jq
     obs-studio
     asusctl
+    eza
     bc
+    obsidian
     trash-cli
     vlc
     valgrind
     cava
+    ripgrep
     ffmpeg
     ffmpegthumbnailer
-    mathpix-snipping-tool
     gimp
     slack
     nodejs
@@ -44,7 +46,7 @@
     vim
     nvim-pkg
     neovide
-    dotnetCorePackages.sdk_8_0_3xx
+    dotnetCorePackages.sdk_9_0_3xx
     fzf
     git
     gh
@@ -54,7 +56,6 @@
     cbonsai
     discord
     spotify
-    github-desktop
     libsForQt5.qt5.qtquickcontrols2
     libsForQt5.qt5.qtgraphicaleffects
     libsForQt5.qt5.qtsvg
