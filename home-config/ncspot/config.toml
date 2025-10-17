@@ -1,0 +1,23 @@
+flip_status_indicators = true
+audio_cache = true
+repeat = "playlist"
+library_tabs = ["tracks", "albums", "playlists", "browse"]
+
+[theme]
+background = "#161616"
+primary = "#82aee8"
+secondary = "#e9a6fd"
+title = "#82aee8"
+playing = "#82aee8"
+playing_selected = "#e9a6fd"
+playing_bg = "black"
+highlight = "#82aee8"
+highlight_bg = "#e9a6fd"
+error = "#f3a611"
+error_bg = "#f34646"
+statusbar = "#e9a6fd"
+statusbar_progress = "#e9a6fd"
+statusbar_bg = "#161616"
+cmdline = "#161616"
+cmdline_bg = "#82aee8"
+search_match = "#e9a6fd"
