@@ -8,6 +8,7 @@
   "modules-left": [
     "battery",
     "network",
+    "custom/vpn_up",
     "custom/wsleft",
     "custom/wsmiddle",
     "custom/wsright"
@@ -101,6 +102,12 @@
     "min-length": 5,
     "tooltip": false
   },
+  "custom/vpn_up": {
+    "exec": "~/.config/waybar/scripts/vpn_up.sh",
+    "format": "{}",
+    "return-type": "",
+    "interval": 1,
+  },
   "network": {
     "interface": "wlp2s0",
     "interface-ethernet": "enp4s0f3u1",
@@ -134,7 +141,7 @@
     "format": "{:%I:%M %p | %A | %m-%d-%Y}",
     "min-length": 32,
     "tooltip": true,
-    "interval": 60,
+    "interval": 30,
     "tooltip-format": "{calendar}",
     "on-click-middle": "~/.config/hypr/scripts/wofi_toggle.sh",
 	  "calendar": {

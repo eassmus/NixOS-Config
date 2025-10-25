@@ -1,7 +1,5 @@
 single_click = true
-location = 1
-x = 1060
-y = 0
+location = top
 height = 1306 
 width = 400
 insensitive = true

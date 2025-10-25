@@ -3,7 +3,7 @@
 @define-color pink-color #e9a6fd;
 @define-color warning-color #f3a611;
 @define-color red-color #f34646;
-@define-color bg-color #1e1e2e;
+@define-color bg-color #161616;
 
 * {
   border: none;
@@ -45,6 +45,7 @@ tooltip {
 #mpris,
 #battery,
 #pulseaudio,
+#custom-vpn_up,
 #network,
 #custom-cpu,
 #memory,
@@ -112,11 +113,20 @@ tooltip {
   margin-right: 10px;
 }
 
+#custom-vpn_up {
+  color: @green-color;
+  border-radius: 20px 20px 20px 20px;
+  padding-right: 10px;
+  padding-left: 16px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
 #network {
   color: @warning-color;
   border-radius: 20px 20px 20px 20px;
-  margin-left: 10px;
   margin-right: 10px;
+  margin-left: 10px;
 }
 
 #network.disconnected {

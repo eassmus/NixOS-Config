@@ -13,7 +13,6 @@
 /* Window */
 #window {
   margin: 0px;
-  padding: 10px;
   border: solid 6px transparent; 
   border-top: none;
   border-radius: 0px 0px 20px 20px;
@@ -25,8 +24,7 @@
 
 /* Inner Box */
 #inner-box {
-  margin: 0px;
-  padding: 10px;
+  margin: 10px;
   border: 0px solid rgba(0, 0, 0, 0);
   color: rgba(0, 0, 0, 0);
   background-color: @bg-color;
@@ -34,11 +32,6 @@
 
 /* Outer Box */
 #outer-box {
-  margin: 10px;
-  padding: 10px;
-  border: 0px solid rgba(0, 0, 0, 0);
-  outline: none;
-  background-color: @bg-color;
 }
 
 /* Scroll */
@@ -52,13 +45,11 @@
 
 /* Input */
 #input {
-  margin: 5px 20px;
+  margin: 0px 25px;
+  margin-top: 20px;
   padding: 10px;
-  border: 6px solid @pink-color;
   border-radius: 10px;
   color: @main-color;
-  font-size: 24px;
-  background-color: @bg-color;
   box-shadow: none;
   caret-color: @pink-color;
   border: solid 6px transparent;
@@ -82,7 +73,7 @@
 
 /* Text */
 #text {
-  margin: 5px;
+  margin: 5px 10px;
   border: 0px solid rgba(0, 0, 0, 0);
   color: @main-color;
 }
