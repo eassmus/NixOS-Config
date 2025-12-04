@@ -13,6 +13,11 @@
   };
 
   programs = {
+    zoxide = {
+      enableBashIntegration= true;
+      flags = [ "--cmd cd" ];
+    };
+
     thunar = {
       enable = true;
       plugins = with pkgs.xfce; [

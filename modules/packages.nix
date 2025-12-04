@@ -5,21 +5,34 @@
   ...
 }:
 {
-
   environment.systemPackages = with pkgs; [
     #(llama-cpp.override { cudaSupport = true; })
+    zoxide
+    brave
     hotspot
+    openconnect
+    networkmanager-openconnect
+    uutils-coreutils-noprefix
     timg
     feh
+    wl-kbptr
+    wlrctl
     qrrs
     jq
     obs-studio
+    gdb
     asusctl
     eza
+    tokei
     bc
     obsidian
     trash-cli
     vlc
+    dua
+    du-dust
+    hyperfine
+    bat
+    fd
     valgrind
     cava
     ripgrep
@@ -44,8 +57,8 @@
     rustup
     gnumake
     vim
-    nvim-pkg
     neovide
+    neovim
     dotnetCorePackages.sdk_9_0_3xx
     fzf
     git
@@ -66,12 +79,17 @@
     openssl.dev
     pkg-config
     wget
-    #xfce.thunar
     xdg-desktop-portal-gtk
     xdg-desktop-portal-wlr
     zip
     firefox
     ripgrep
+    basedpyright
+    lua-language-server
+    rust-analyzer
+    nixd
+    clang-tools
+    luaformatter
   ];
 
   environment.sessionVariables = rec {

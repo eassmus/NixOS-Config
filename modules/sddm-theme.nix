@@ -1,13 +1,9 @@
-{ lib, pkgs }:
+{
+  lib,
+  pkgs,
+}:
 
 let
-  imgLink = "https://w.wallhaven.cc/full/p8/wallhaven-p8jv99.jpg";
-
-  image = pkgs.fetchurl {
-    url = imgLink;
-    sha256 = "sha256-LFaqLWkh+GNNHYW/d09oGsTop7BmCIg5k3vxdOFjHlc=";
-  };
-
   themeIni = [
     {
       section = "General";
@@ -32,7 +28,7 @@ let
     {
       section = "General";
       key = "HeaderText";
-      value = "";
+      value = "  ";
     }
     {
       section = "General";
@@ -51,13 +47,38 @@ let
     }
     {
       section = "General";
+      key = "BlurRadius";
+      value = "25";
+    }
+    {
+      section = "General";
       key = "MainColor";
-      value = "#e9a6fd";
+      value = "#82aee8";
+    }
+    {
+      section = "General";
+      key = "FullBlur";
+      value = "true";
     }
     {
       section = "General";
       key = "AccentColor";
-      value = "#82aee8";
+      value = "#e9a6fd";
+    }
+    {
+      section = "General";
+      key = "HaveFormBackground";
+      value = "true";
+    }
+    {
+      section = "General";
+      key = "BackgroundColor";
+      value = "#161616";
+    }
+    {
+      section = "General";
+      key = "RoundCorners";
+      value = "10";
     }
   ];
 in
@@ -74,7 +95,7 @@ pkgs.stdenv.mkDerivation {
     cp -R ./* $out/
     cd $out/
     rm $out/Backgrounds/background.png
-    cp -r ${image} $out/Backgrounds/background.jpg
+    cp ${../files/mountain.jpg} $out/Backgrounds/background.jpg
     ${lib.concatMapStringsSep "\n" (e: ''
       ${pkgs.crudini}/bin/crudini --set --inplace $out/theme.conf \
         "${e.section}" "${e.key}" "\"${e.value}\""

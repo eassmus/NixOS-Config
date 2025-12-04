@@ -35,10 +35,10 @@
 
     displayManager = {
       ly = {
-        enable = true;
+        enable = false;
       };
       sddm = {
-        enable = false;
+        enable = true;
         wayland.enable = true;
         theme = "${import ./sddm-theme.nix {
           inherit lib;

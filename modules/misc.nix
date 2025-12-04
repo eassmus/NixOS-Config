@@ -19,6 +19,7 @@
 
     cp = "cp -i";
     mv = "mv -i";
+    cat = "bat";
 
     realrm = "rm";
 
@@ -26,7 +27,11 @@
 
     nfu = "sudo nix flake update";
     nrs = "sudo nixos-rebuild switch";
+    ngc = "nix-store --gc";
+    ns = "nix-shell";
 
     e = "nvim";
+
+    size = "du -bsh $(ls -A) | sort -h";
   };
 }

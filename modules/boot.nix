@@ -7,10 +7,10 @@
   boot.loader.grub.efiSupport = true;
   boot.loader.grub.useOSProber = true;
   #  boot.loader.grub.backgroundColor = "#e9a6fd";
-  boot.loader.grub.splashImage = ../files/mountain.jpg;
+  boot.loader.grub.splashImage = ../files/mountain_rounded.jpg;
   boot.loader.grub.splashMode = "stretch";
   boot.loader.grub.font = "${pkgs.jetbrains-mono}/share/fonts/truetype/JetBrainsMono-Bold.ttf";
   boot.loader.grub.fontSize = 32;
   boot.loader.timeout = -1;
-  boot.kernelPackages = pkgs.linuxPackages_6_12;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 }

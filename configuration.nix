@@ -24,6 +24,8 @@
     ];
   };
 
+  nixpkgs.config.allowUnfree = true;
+
   #system.copySystemConfiguration = true;
 
   # This option defines the first version of NixOS you have installed on this particular machine,
