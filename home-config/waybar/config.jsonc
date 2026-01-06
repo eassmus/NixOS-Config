@@ -141,7 +141,7 @@
     "format": "{:%I:%M %p | %A | %m-%d-%Y}",
     "min-length": 32,
     "tooltip": true,
-    "interval": 30,
+    "interval": 1,
     "tooltip-format": "{calendar}",
     "on-click-middle": "~/.config/hypr/scripts/wofi_toggle.sh",
 	  "calendar": {
