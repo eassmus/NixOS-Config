@@ -9,6 +9,7 @@
     noto-fonts-extra
     noto-fonts-cjk-sans
     nerd-fonts.jetbrains-mono
+    corefonts
   ];
 
   fonts.fontconfig.defaultFonts = {

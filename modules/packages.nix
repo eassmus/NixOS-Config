@@ -7,6 +7,7 @@
 {
   environment.systemPackages = with pkgs; [
     #(llama-cpp.override { cudaSupport = true; })
+    claude-code
     zoxide
     brave
     hotspot
@@ -24,7 +25,6 @@
     asusctl
     eza
     tokei
-    bc
     obsidian
     trash-cli
     vlc
@@ -85,6 +85,7 @@
     firefox
     ripgrep
     basedpyright
+    typescript-language-server
     lua-language-server
     rust-analyzer
     nixd
