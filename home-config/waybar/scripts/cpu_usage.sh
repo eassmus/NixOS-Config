@@ -31,7 +31,7 @@ total_diff=$((total2 - total1))
 
 # Avoid division by zero and calculate CPU usage
 if [ $total_diff -gt 0 ]; then
-    cpu_usage=$(awk "BEGIN {printf \"%.0f\", (1 - $idle_diff / $total_diff) * 100}")
+    cpu_usage=$(awk "BEGIN {printf \"%2.0f\", (1 - $idle_diff / $total_diff) * 100}")
 else
     cpu_usage="0.00"
 fi
