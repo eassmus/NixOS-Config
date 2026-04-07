@@ -68,9 +68,9 @@
     "interval": 1
   },
   "custom/gpu": {
-    "exec": "nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits",
+    "exec": "~/.config/waybar/scripts/get_gpu_busy.sh",
     "on-click": "kitty -e nvtop",
-    "format": "󰢮 {:>2}%",
+    "format": "{:>5}",
     "return-type": "",
     "interval": 1,
     "tooltip": false

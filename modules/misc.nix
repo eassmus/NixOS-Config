@@ -31,6 +31,7 @@
     ns = "nix-shell";
 
     e = "nvim";
+    nivm = "nvim";
 
     size = "du -bsh $(ls -A) | sort -h";
   };

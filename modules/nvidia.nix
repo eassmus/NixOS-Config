@@ -11,6 +11,9 @@ let
     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
     export __VK_LAYER_NV_optimus=NVIDIA_only
+    export AQ_DRM_DEVICES="/dev/dri/card1:/dev/dri/card0"
+    export WLR_DRM_DEVICES="/dev/dri/card1:/dev/dri/card0"
+    export __EGL_VENDOR_LIBRARY_FILENAMES="/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json"
     exec -a "$0" "$@"
   '';
 in
@@ -22,15 +25,39 @@ in
   environment.systemPackages = [ nvidia-offload ];
   services.xserver.videoDrivers = [ "nvidia" ];
 
+  boot.kernelParams = [ 
+    "nvidia.NVreg_DynamicPowerManagement=0x02"
+    "nvidia.NVreg_DynamicPowerManagementVideoMemoryThreshold=0"
+    "nvidia_drm.fbdev=0" 
+  ];
+
+  services.udev.extraRules = ''
+    # Use add|bind to ensure the rule hits regardless of module load timing
+    ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}="0x030000", ATTR{power/control}="auto", ATTR{power/autosuspend_delay_ms}="100"
+    ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}="0x030200", ATTR{power/control}="auto", ATTR{power/autosuspend_delay_ms}="100"
+  '';
+
+  environment.sessionVariables = {
+    # Force iGPU (card1) as primary, dGPU (card0) as secondary
+    AQ_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card0";
+    WLR_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card0";
+    
+    # Force the EGL loader to use Mesa (iGPU) for the desktop compositor
+    __EGL_VENDOR_LIBRARY_FILENAMES = "/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json";
+    
+    # Prevent applications from choosing NVIDIA by default
+    __NV_PRIME_RENDER_OFFLOAD = "0";
+  };
+
   hardware.nvidia = {
 
     # Modesetting is required.
 
     # Nvidia power management. Experimental, and can cause sleep/suspend to fail.
-    powerManagement.enable = false;
+    powerManagement.enable = true;
     # Fine-grained power management. Turns off GPU when not in use.
     # Experimental and only works on modern Nvidia GPUs (Turing or newer).
-    powerManagement.finegrained = false;
+    powerManagement.finegrained = true;
 
     # Use the NVidia open source kernel module (not to be confused with the
     # independent third-party "nouveau" open source driver).
