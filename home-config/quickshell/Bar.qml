@@ -1,0 +1,433 @@
+import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Io
+import Quickshell.Widgets
+import QtQuick
+import "Modules"
+
+Scope {
+  id: root
+
+  Vars { id: vars }
+
+  Variants {
+    model: Quickshell.screens
+
+    delegate: Component {
+      PanelWindow {
+        id: panel
+        required property var modelData
+        screen: modelData
+        color: "transparent"
+        anchors { top: true; left: true; right: true }
+        implicitHeight: 74
+
+        // -- helper processes --
+        Process { id: wsDispatch }
+        Process { id: kittyBtop;   command: ["kitty", "-e", "btop"] }
+        Process { id: kittyNvtop;  command: ["kitty", "-e", "nvtop"] }
+        Process { id: nmtuiLaunch; command: ["kitty", "-e", "nmtui"] }
+        Process { id: batLogout;   command: ["wlogout"] }
+        Process { id: fanCycle }
+        Process { id: volToggle;   command: ["pamixer", "-t"] }
+        Process { id: micToggle;   command: ["pamixer", "--default-source", "-t"] }
+
+        // ---------------- LEFT ----------------
+        Row {
+          anchors.left: parent.left
+          anchors.top: parent.top
+          anchors.topMargin: 20
+          anchors.leftMargin: 20
+          spacing: 20
+
+          // Battery
+          Pill {
+            text: {
+              let s = vars.bat_state
+              if (vars.on_ac) return "󰚥"
+              if (s === "Full") return "󰚥"
+              if (s === "Empty") return "Goodbye"
+              if (s === "Unknown") return "Unknown"
+              let icon = (s === "Charging" || s === "PendingCharge") ? "" : ""
+              return icon + " " + vars.bat_percent + "% | " + vars.bat_time
+            }
+            textColor: {
+              if (vars.bat_state === "Charging" || vars.bat_state === "PendingCharge") return vars.greenColor
+              if (vars.bat_percent <= 10) return vars.redColor
+              if (vars.bat_percent <= 30) return vars.warningColor
+              return vars.greenColor
+            }
+            onClicked: batLogout.running = true
+          }
+
+          // Network
+          Pill {
+            id: networkPill
+
+            // bar/text approach: a small staircase signal-bars graphic in front of
+            // the bandwidth text. Non-wifi states fall back to a glyph icon.
+            text: ""
+            lPad: 14
+            rPad: 14
+
+            property real iconW: 24
+            property real iconGap: 8
+
+            // signal strength 0..1; 0 when not on wifi
+            property real wifiSignal: networkPopup.activeWifi ? networkPopup.activeWifi.signalStrength : 0
+
+            contentWidth: iconW + iconGap + bwText.implicitWidth
+
+            HoverHandler {
+              onHoveredChanged: networkPopup.pillHovered = hovered
+            }
+
+            // ---------- left: bars graphic or glyph icon ----------
+            Item {
+              id: iconArea
+              width: networkPill.iconW
+              height: 20
+              anchors.left: parent.left
+              anchors.leftMargin: networkPill.borderWidth + networkPill.lPad
+              anchors.verticalCenter: parent.verticalCenter
+
+              // round to nearest 25% step with a floor of 1 lit bar while connected.
+              // thresholds: 0–37 → 1 bar, 38–62 → 2, 63–87 → 3, 88–100 → 4.
+              property int litBars: {
+                if (vars.net_status !== "wifi") return 0
+                let pct = networkPill.wifiSignal * 100
+                return Math.max(1, Math.min(4, Math.round(pct / 25)))
+              }
+
+              // staircase: 4 vertical bars, bottom-aligned, increasing in height
+              Row {
+                anchors.fill: parent
+                spacing: 2
+                visible: vars.net_status === "wifi"
+                Repeater {
+                  model: 4
+                  delegate: Item {
+                    width: 4
+                    height: parent.height
+                    Rectangle {
+                      anchors.bottom: parent.bottom
+                      width: parent.width
+                      height: 6 + index * 5   // 4, 8, 12, 16
+                      radius: 1
+                      antialiasing: true
+                      property bool on: index < iconArea.litBars
+                      color: on ? vars.greenColor : "#444"
+                    }
+                  }
+                }
+              }
+
+              // fallback glyph for non-wifi states
+              Text {
+                anchors.centerIn: parent
+                visible: vars.net_status !== "wifi"
+                text: vars.net_status === "ethernet" ? "󰈁 " : "󱘖 "
+                color: vars.net_status === "disconnected" ? vars.redColor : vars.greenColor
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 22
+                font.bold: true
+              }
+            }
+
+            // ---------- right: bandwidth text (hidden when disconnected) ----------
+            Text {
+              id: bwText
+              anchors.left: iconArea.right
+              anchors.leftMargin: networkPill.iconGap
+              anchors.verticalCenter: parent.verticalCenter
+              text: vars.net_status === "disconnected" ? ""
+                  : ("| " + vars.net_up + " 󰕒 | " + vars.net_down + " 󰇚")
+              color: vars.net_status === "disconnected" ? vars.redColor
+                   : (vars.net_status === "wifi" || vars.net_status === "ethernet") ? vars.greenColor
+                   : vars.warningColor
+              font.family: "JetBrainsMono Nerd Font"
+              font.pixelSize: 22
+              font.bold: true
+            }
+
+            onClicked: nmtuiLaunch.running = true
+          }
+
+          // Workspace group
+          // Workspace pill: arrows + 10 clickable dots (Hyprland-driven)
+          Pill {
+            id: workspacePill
+            lPad: 12
+            rPad: 12
+
+            property int wsCount: 10
+            property int dotSize: 12
+            property int dotSpacing: 10
+            property real currentDotHeight: dotSize * 1.9
+
+            // map of workspace id → window count, polled from hyprctl
+            property var wsWindowCounts: ({})
+
+            Process {
+              id: wsInfoProc
+              command: ["hyprctl", "workspaces", "-j"]
+              running: true
+              stdout: StdioCollector {
+                onStreamFinished: {
+                  try {
+                    let arr = JSON.parse(this.text)
+                    let counts = {}
+                    for (let i = 0; i < arr.length; i++) counts[arr[i].id] = arr[i].windows
+                    workspacePill.wsWindowCounts = counts
+                  } catch (e) {}
+                }
+              }
+            }
+            Timer {
+              interval: 1000
+              running: true
+              repeat: true
+              onTriggered: wsInfoProc.running = true
+            }
+
+            contentWidth: wsCount * dotSize + (wsCount - 1) * dotSpacing
+
+            // dots, centered; scroll up = +1 ws, scroll down = -1 ws
+            MouseArea {
+              anchors.fill: parent
+              acceptedButtons: Qt.NoButton
+              onWheel: function(wheel) {
+                if (wheel.angleDelta.y > 0) Hyprland.dispatch("workspace +1")
+                else if (wheel.angleDelta.y < 0) Hyprland.dispatch("workspace -1")
+              }
+            }
+
+            Row {
+              anchors.centerIn: parent
+              spacing: workspacePill.dotSpacing
+
+              Repeater {
+                model: workspacePill.wsCount
+                delegate: Item {
+                  id: wsItem
+                  property int wsId: index + 1
+                  property bool current: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === wsId
+                  property bool occupied: (workspacePill.wsWindowCounts[wsId] || 0) > 0
+                  width: workspacePill.dotSize
+                  // wrapper is always tall enough for the extended dot so the row's
+                  // overall height (and vertical centering) stays stable
+                  height: workspacePill.currentDotHeight
+
+                  Rectangle {
+                    anchors.centerIn: parent
+                    width: workspacePill.dotSize
+                    height: wsItem.current ? workspacePill.currentDotHeight : workspacePill.dotSize
+                    radius: width / 2  // capsule when tall, circle when square
+                    antialiasing: true
+                    color: wsItem.occupied ? vars.pinkColor : vars.mainColor
+                    Behavior on height { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: Hyprland.dispatch("workspace " + wsItem.wsId)
+                    }
+                  }
+                }
+              }
+            }
+
+          }
+          // VPN
+          Pill {
+            visible: vars.vpn_up.length > 0
+            text: vars.vpn_up
+            textColor: vars.greenColor
+            rPad: 16
+          }
+
+        }
+
+        // ---------------- CENTER ----------------
+        Pill {
+          id: clockPill
+          anchors.horizontalCenter: parent.horizontalCenter
+          anchors.top: parent.top
+          anchors.topMargin: 20
+          text: vars.time
+          textColor: vars.pinkColor
+
+          HoverHandler {
+            onHoveredChanged: calendarPopup.pillHovered = hovered
+          }
+        }
+
+        SpotifyControls {
+          id: spotifyPopup
+          anchorItem: spotifyTrack
+        }
+
+        CalendarPopup {
+          id: calendarPopup
+          anchorItem: clockPill
+        }
+
+        NetworkPopup {
+          id: networkPopup
+          anchorItem: networkPill
+        }
+
+        AudioPopup {
+          id: audioPopup
+          anchorItem: audioGroup
+        }
+
+        // ---------------- RIGHT ----------------
+        Row {
+          anchors.right: parent.right
+          anchors.top: parent.top
+          anchors.topMargin: 20
+          anchors.rightMargin: 20
+          spacing: 20
+
+          // Spotify track pill (album art + scrolling title)
+          Pill {
+            id: spotifyTrack
+            visible: spotifyPopup.player !== null
+            property var player: spotifyPopup.player
+            property real artSize: 28
+            property real maxTextWidth: 200
+            property real artGap: 8
+
+            text: ""
+            lPad: 8
+            rPad: 14
+            contentWidth: artSize + artGap + maxTextWidth
+
+            onClicked: {
+              if (spotifyPopup.player && spotifyPopup.player.canGoNext) spotifyPopup.player.next()
+            }
+            onRightClicked: {
+              if (spotifyPopup.player && spotifyPopup.player.canGoPrevious) spotifyPopup.player.previous()
+            }
+
+            ClippingRectangle {
+              id: spotArt
+              width: spotifyTrack.artSize
+              height: spotifyTrack.artSize
+              anchors.left: parent.left
+              anchors.leftMargin: spotifyTrack.borderWidth + spotifyTrack.lPad
+              anchors.verticalCenter: parent.verticalCenter
+              radius: 6
+              color: "#222"
+              antialiasing: true
+              layer.enabled: true
+              layer.smooth: true
+              layer.samples: 8
+
+              Image {
+                anchors.fill: parent
+                source: (spotifyTrack.player && spotifyTrack.player.trackArtUrl) ? spotifyTrack.player.trackArtUrl : ""
+                sourceSize.width: width * 2
+                sourceSize.height: height * 2
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
+                mipmap: true
+                asynchronous: true
+                cache: true
+                visible: status === Image.Ready && !spotifyPopup.isDJ
+              }
+              Text {
+                anchors.centerIn: parent
+                visible: spotifyPopup.isDJ || !spotifyTrack.player || !spotifyTrack.player.trackArtUrl
+                color: spotifyPopup.isDJ ? vars.pinkColor : "#555"
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: spotifyPopup.isDJ ? 22 : 18
+                text: spotifyPopup.isDJ ? "" : ""
+              }
+            }
+
+            Item {
+              id: spotTextContainer
+              anchors.left: spotArt.right
+              anchors.leftMargin: spotifyTrack.artGap
+              anchors.verticalCenter: parent.verticalCenter
+              width: spotifyTrack.maxTextWidth
+              height: spotLabel.implicitHeight
+
+              Text {
+                id: spotLabel
+                anchors.fill: parent
+                text: spotifyTrack.player ? (spotifyTrack.player.trackTitle || "Nothing playing") : "No player"
+                color: vars.mainColor
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 22
+                font.bold: true
+                elide: Text.ElideRight
+                horizontalAlignment: implicitWidth > width ? Text.AlignLeft : Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+              }
+            }
+
+            HoverHandler {
+              onHoveredChanged: spotifyPopup.pillHovered = hovered
+            }
+          }
+
+          // CPU / GPU / Temp / Fan group
+          Row {
+            spacing: -14
+            Pill {
+              roundLeft: true; roundRight: false
+              text: " " + vars.cpu_usage + "%"
+              textColor: vars.mainColor
+              onClicked: kittyBtop.running = true
+            }
+            Pill {
+              roundLeft: false; roundRight: false
+              text: vars.gpu_usage
+              textColor: vars.mainColor
+              onClicked: kittyNvtop.running = true
+            }
+            Pill {
+              roundLeft: false; roundRight: false
+              text: " " + vars.temp
+              textColor: vars.mainColor
+              onClicked: kittyBtop.running = true
+            }
+            Pill {
+              roundLeft: false; roundRight: true
+              text: vars.fan_mode + " "
+              textColor: vars.mainColor
+              onClicked: { fanCycle.command = ["asusctl","profile","--next"]; fanCycle.running = true }
+              onRightClicked: { fanCycle.command = ["bash","-c","asusctl profile --next && asusctl profile --next"]; fanCycle.running = true }
+            }
+          }
+
+          // Audio: volume + mic
+          Row {
+            id: audioGroup
+            spacing: -2
+
+            HoverHandler {
+              onHoveredChanged: audioPopup.pillHovered = hovered
+            }
+
+            Pill {
+              roundLeft: true; roundRight: false
+              text: vars.vol_muted ? " Muted" : (" " + ("" + vars.vol).padStart(3, " ") + "% ")
+              textColor: vars.pinkColor
+              onClicked: volToggle.running = true
+            }
+            Pill {
+              roundLeft: false; roundRight: true
+              text: vars.mic_muted ? " Muted" : (" " + ("" + vars.mic).padStart(3, " ") + "% ")
+              textColor: vars.pinkColor
+              onClicked: micToggle.running = true
+            }
+          }
+        }
+      }
+    }
+  }
+}
