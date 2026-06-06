@@ -6,7 +6,6 @@
     jetbrains-mono
     hanazono
     noto-fonts
-    noto-fonts-extra
     noto-fonts-cjk-sans
     nerd-fonts.jetbrains-mono
     corefonts

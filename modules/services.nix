@@ -37,13 +37,17 @@
       ly = {
         enable = false;
       };
+      autoLogin = {
+        enable = true;
+        user = "pulsar";
+      };
       sddm = {
         enable = true;
         wayland.enable = true;
-        theme = "${import ./sddm-theme.nix {
-          inherit lib;
-          inherit pkgs;
-        }}";
+        #theme = "${import ./sddm-theme.nix {
+        #  inherit lib;
+        #  inherit pkgs;
+        #}}";
       };
     };
     gnome.gnome-keyring.enable = true;

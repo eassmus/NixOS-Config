@@ -13,6 +13,7 @@
   };
 
   programs = {
+    adb.enable = true;
     zoxide = {
       enableBashIntegration= true;
       flags = [ "--cmd cd" ];
@@ -26,6 +27,9 @@
       ];
     };
     starship = {
+      enable = true;
+    };
+    hyprlock = {
       enable = true;
     };
     hyprland = {

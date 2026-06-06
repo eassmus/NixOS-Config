@@ -32,6 +32,7 @@
 
     e = "nvim";
     nivm = "nvim";
+    cr = "claude --resume";
 
     size = "du -bsh $(ls -A) | sort -h";
   };

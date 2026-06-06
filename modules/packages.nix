@@ -1,13 +1,24 @@
 {
   config,
   pkgs,
+  pkgs-unstable,
   lib,
   ...
 }:
 {
   environment.systemPackages = with pkgs; [
     #(llama-cpp.override { cudaSupport = true; })
+    pkgs-unstable.quickshell
+    hypridle
+    psmisc
+    quickshell
+    telegram-desktop
+    omnisharp-roslyn
+    csharp-ls
     claude-code
+    mono
+    unityhub
+    octave
     zoxide
     brave
     hotspot
@@ -29,7 +40,7 @@
     trash-cli
     vlc
     dua
-    du-dust
+    dust
     hyperfine
     bat
     fd
@@ -59,7 +70,7 @@
     vim
     neovide
     neovim
-    dotnetCorePackages.sdk_9_0_3xx
+    dotnetCorePackages.sdk_11_0-bin
     fzf
     git
     gh

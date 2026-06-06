@@ -22,6 +22,15 @@ Scope {
         anchors { top: true; left: true; right: true }
         implicitHeight: 74
 
+        // invisible full-bar item used as an anchor target for popups that need
+        // to position themselves relative to the bar / screen (PopupWindow.anchor
+        // requires an Item, and PanelWindow itself is a Window).
+        Item {
+          id: panelArea
+          anchors.fill: parent
+          z: -1
+        }
+
         // -- helper processes --
         Process { id: wsDispatch }
         Process { id: kittyBtop;   command: ["kitty", "-e", "btop"] }
@@ -42,6 +51,12 @@ Scope {
 
           // Battery
           Pill {
+            id: batteryPill
+
+            HoverHandler {
+              onHoveredChanged: wallpaperButton.pillHovered = hovered
+            }
+
             text: {
               let s = vars.bat_state
               if (vars.on_ac) return "󰚥"
@@ -126,7 +141,7 @@ Scope {
               Text {
                 anchors.centerIn: parent
                 visible: vars.net_status !== "wifi"
-                text: vars.net_status === "ethernet" ? "󰈁 " : "󱘖 "
+                text: vars.net_status === "ethernet" ? "󰈁" : "󱘖"
                 color: vars.net_status === "disconnected" ? vars.redColor : vars.greenColor
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 22
@@ -282,6 +297,103 @@ Scope {
           anchorItem: audioGroup
         }
 
+        GpuPopup {
+          id: gpuPopup
+          anchorItem: gpuPill
+        }
+
+        CpuPopup {
+          id: cpuPopup
+          anchorItem: cpuPill
+        }
+
+        WallpaperPicker {
+          id: wallpaperPicker
+          anchorItem: batteryPill
+        }
+
+        // Hover-revealed button under the battery pill that opens the wallpaper picker.
+        // Sized + styled to match the other hover popups: gradient border, 42px
+        // inner height, 20px bridge, default centered placement under the pill.
+        PopupWindow {
+          id: wallpaperButton
+
+          property bool pillHovered: false
+          property bool buttonHovered: false
+          property bool isOpen: false
+          property int closeDelay: 250
+
+          onPillHoveredChanged: _u()
+          onButtonHoveredChanged: _u()
+          function _u() {
+            if (pillHovered || buttonHovered) { btnTimer.stop(); isOpen = true }
+            else btnTimer.restart()
+          }
+          Timer {
+            id: btnTimer
+            interval: wallpaperButton.closeDelay
+            repeat: false
+            onTriggered: wallpaperButton.isOpen = false
+          }
+
+          property color bgColor: vars.bgColor
+          property color gradTop: vars.pinkColor
+          property color gradBottom: vars.mainColor
+          property real borderWidth: 6
+          property real radius: 20
+          property int bridgeHeight: 20
+          property int innerH: 42
+          property real hPad: 18
+
+          color: "transparent"
+          implicitWidth: iconLabel.implicitWidth + hPad * 2 + borderWidth * 2
+          implicitHeight: bridgeHeight + innerH + borderWidth * 2
+          visible: isOpen
+
+          anchor {
+            item: batteryPill
+            edges: Edges.Bottom
+            gravity: Edges.Bottom
+            margins.top: 0
+          }
+
+          HoverHandler { onHoveredChanged: wallpaperButton.buttonHovered = hovered }
+
+          Rectangle {
+            id: btnOuter
+            anchors.fill: parent
+            anchors.topMargin: wallpaperButton.bridgeHeight
+            radius: wallpaperButton.radius
+            gradient: Gradient {
+              GradientStop { position: 0.0; color: wallpaperButton.gradTop }
+              GradientStop { position: 1.0; color: wallpaperButton.gradBottom }
+            }
+          }
+          Rectangle {
+            id: btnBg
+            anchors.fill: btnOuter
+            anchors.margins: wallpaperButton.borderWidth
+            color: wallpaperButton.bgColor
+            radius: Math.max(0, wallpaperButton.radius - wallpaperButton.borderWidth)
+
+            Text {
+              id: iconLabel
+              anchors.centerIn: parent
+              text: "󰋩"
+              color: vars.pinkColor
+              font.family: "JetBrainsMono Nerd Font"
+              font.pixelSize: 22
+              font.bold: true
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: wallpaperPicker.open = !wallpaperPicker.open
+            }
+          }
+        }
+
         // ---------------- RIGHT ----------------
         Row {
           anchors.right: parent.right
@@ -378,16 +490,26 @@ Scope {
           Row {
             spacing: -14
             Pill {
+              id: cpuPill
               roundLeft: true; roundRight: false
               text: " " + vars.cpu_usage + "%"
               textColor: vars.mainColor
               onClicked: kittyBtop.running = true
+
+              HoverHandler {
+                onHoveredChanged: cpuPopup.pillHovered = hovered
+              }
             }
             Pill {
+              id: gpuPill
               roundLeft: false; roundRight: false
               text: vars.gpu_usage
               textColor: vars.mainColor
               onClicked: kittyNvtop.running = true
+
+              HoverHandler {
+                onHoveredChanged: gpuPopup.pillHovered = hovered
+              }
             }
             Pill {
               roundLeft: false; roundRight: false

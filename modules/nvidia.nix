@@ -11,8 +11,8 @@ let
     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
     export __VK_LAYER_NV_optimus=NVIDIA_only
-    export AQ_DRM_DEVICES="/dev/dri/card1:/dev/dri/card0"
-    export WLR_DRM_DEVICES="/dev/dri/card1:/dev/dri/card0"
+    export AQ_DRM_DEVICES="/dev/dri/card1:/dev/dri/card2"
+    export WLR_DRM_DEVICES="/dev/dri/card1:/dev/dri/card2"
     export __EGL_VENDOR_LIBRARY_FILENAMES="/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json"
     exec -a "$0" "$@"
   '';
@@ -39,14 +39,15 @@ in
 
   environment.sessionVariables = {
     # Force iGPU (card1) as primary, dGPU (card0) as secondary
-    AQ_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card0";
-    WLR_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card0";
+    AQ_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card2";
+    WLR_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card2";
     
     # Force the EGL loader to use Mesa (iGPU) for the desktop compositor
-    __EGL_VENDOR_LIBRARY_FILENAMES = "/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json";
+    #__EGL_VENDOR_LIBRARY_FILENAMES = "/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json";
+    __GLX_VENDOR_LIBRARY_NAME = "mesa"; # Default to Mesa for GL apps
     
     # Prevent applications from choosing NVIDIA by default
-    __NV_PRIME_RENDER_OFFLOAD = "0";
+    __NV_PRIME_RENDER_OFFLOAD = "1";
   };
 
   hardware.nvidia = {

@@ -1,8 +1,8 @@
-#!/usr/bin/bash 
-A=`ps -aux | grep -G '.:.. waybar$'`
+#!/usr/bin/bash
+A=`ps -aux | grep -G '.:.. quickshell$'`
 echo $A
 if [[ $A == '' ]]; then
-	waybar
+	quickshell &
 else
-	pkill waybar
+	pkill quickshell
 fi
