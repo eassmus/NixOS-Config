@@ -42,6 +42,8 @@ PopupWindow {
   property real tempC: 0
   property real memUsed: 0      // GiB
   property real memTotal: 0     // GiB
+  property var procs: []        // [ { name, cpu, memMiB } ] sorted desc by cpu
+  property int maxProcs: 6
 
   // one poll = /proc/stat (per-core), /proc/meminfo, and k10temp Tctl
   Process {
@@ -99,7 +101,41 @@ PopupWindow {
     }
   }
 
-  function _refresh() { cpuProc.running = true }
+  // top processes by CPU; rss is in kB, we convert to MiB in JS.
+  // We fetch a few extra rows so we can drop the helpers in our own pipeline
+  // (bash/ps/head) — they spike to ~100 % momentarily and would otherwise
+  // flicker into the visible list.
+  Process {
+    id: psProc
+    command: ["bash", "-c",
+      "ps -eo comm,%cpu,rss --sort=-%cpu --no-headers 2>/dev/null | head -n " + (root.maxProcs + 6)]
+    stdout: StdioCollector { onStreamFinished: { root.procs = root._parseProcs(this.text) } }
+  }
+
+  // processes in our own polling pipeline — filter them from the list so
+  // they don't briefly appear at the top while the sample is being taken.
+  readonly property var _hiddenProcs: ({ "ps": 1, "bash": 1, "sh": 1, "head": 1, "grep": 1, "awk": 1, "sed": 1 })
+
+  function _parseProcs(text) {
+    let lines = text.split("\n")
+    let out = []
+    for (let i = 0; i < lines.length && out.length < root.maxProcs; i++) {
+      let l = lines[i].trim()
+      if (!l) continue
+      let p = l.split(/\s+/)
+      if (p.length < 3) continue
+      let cpu = parseFloat(p[p.length - 2])
+      let rss = parseInt(p[p.length - 1])
+      if (isNaN(cpu) || isNaN(rss)) continue
+      // name is everything except the last two fields (in case comm has spaces)
+      let name = p.slice(0, p.length - 2).join(" ")
+      if (root._hiddenProcs[name]) continue
+      out.push({ name: name, cpu: cpu, memMiB: Math.round(rss / 1024) })
+    }
+    return out
+  }
+
+  function _refresh() { cpuProc.running = true; psProc.running = true }
   // reset the delta baseline each time we open so the first reading is honest
   onOpenChanged: if (open) { _prevCpu = ({}); _refresh() }
   Timer {
@@ -116,10 +152,13 @@ PopupWindow {
   }
   // ---- layout ----
   property int innerPadding: 16
-  property int contentWidth: 380
+  property int contentWidth: 420
   property int rowH: 30
   property int coreRowH: 28
   property int coreColGap: 24
+  property int cpuColW: 80
+  property int memColW: 110
+  property int colGap: 12
 
   color: "transparent"
   implicitWidth: contentWidth + innerPadding * 2 + borderWidth * 2
@@ -232,11 +271,99 @@ PopupWindow {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             text: modelData.util + "%"
-            color: root._utilColor(modelData.util)
+            color: root.pinkColor
             font.family: root.fontFamily
             font.pixelSize: 22
             font.bold: true
           }
+        }
+      }
+    }
+
+    Item { width: 1; height: 6 }
+
+    // ---- divider ----
+    Rectangle {
+      width: content.width
+      height: 2
+      color: "#2a2a2a"
+    }
+
+    Item { width: 1; height: 4 }
+
+    // ---- process list header ----
+    Item {
+      width: content.width
+      height: root.rowH
+      Text {
+        id: hCpu
+        anchors.right: hMem.left
+        anchors.rightMargin: root.colGap
+        anchors.verticalCenter: parent.verticalCenter
+        width: root.cpuColW
+        horizontalAlignment: Text.AlignRight
+        text: "CPU"
+        color: root.dimColor
+        font.family: root.fontFamily
+        font.pixelSize: 22
+        font.bold: true
+      }
+      Text {
+        id: hMem
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: root.memColW
+        horizontalAlignment: Text.AlignRight
+        text: "MEM"
+        color: root.dimColor
+        font.family: root.fontFamily
+        font.pixelSize: 22
+        font.bold: true
+      }
+    }
+
+    // ---- top processes ----
+    Repeater {
+      model: root.procs.slice(0, root.maxProcs)
+      delegate: Item {
+        width: content.width
+        height: root.rowH
+        Text {
+          anchors.left: parent.left
+          anchors.right: pCpu.left
+          anchors.rightMargin: root.colGap
+          anchors.verticalCenter: parent.verticalCenter
+          text: modelData.name
+          color: root.mainColor
+          font.family: root.fontFamily
+          font.pixelSize: 22
+          font.bold: true
+          elide: Text.ElideRight
+        }
+        Text {
+          id: pCpu
+          anchors.right: pMem.left
+          anchors.rightMargin: root.colGap
+          anchors.verticalCenter: parent.verticalCenter
+          width: root.cpuColW
+          horizontalAlignment: Text.AlignRight
+          text: modelData.cpu.toFixed(1) + "%"
+          color: root.mainColor
+          font.family: root.fontFamily
+          font.pixelSize: 22
+          font.bold: true
+        }
+        Text {
+          id: pMem
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+          width: root.memColW
+          horizontalAlignment: Text.AlignRight
+          text: modelData.memMiB + " MiB"
+          color: root.pinkColor
+          font.family: root.fontFamily
+          font.pixelSize: 22
+          font.bold: true
         }
       }
     }

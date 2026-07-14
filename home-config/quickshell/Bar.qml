@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Services.Pipewire
 import Quickshell.Widgets
 import QtQuick
 import "Modules"
@@ -38,8 +39,27 @@ Scope {
         Process { id: nmtuiLaunch; command: ["kitty", "-e", "nmtui"] }
         Process { id: batLogout;   command: ["wlogout"] }
         Process { id: fanCycle }
-        Process { id: volToggle;   command: ["pamixer", "-t"] }
-        Process { id: micToggle;   command: ["pamixer", "--default-source", "-t"] }
+        // Native Pipewire helpers — no subprocess round-trip, no polling lag.
+        function _toggleVol() {
+          let n = Pipewire.defaultAudioSink
+          if (n && n.ready) n.audio.muted = !n.audio.muted
+        }
+        function _toggleMic() {
+          let n = Pipewire.defaultAudioSource
+          if (n && n.ready) n.audio.muted = !n.audio.muted
+        }
+        function _bumpVol(dir) {
+          let n = Pipewire.defaultAudioSink
+          if (!n || !n.ready) return
+          n.audio.muted = false
+          n.audio.volume = Math.max(0, Math.min(1, n.audio.volume + dir * 0.01))
+        }
+        function _bumpMic(dir) {
+          let n = Pipewire.defaultAudioSource
+          if (!n || !n.ready) return
+          n.audio.muted = false
+          n.audio.volume = Math.max(0, Math.min(1, n.audio.volume + dir * 0.01))
+        }
 
         // ---------------- LEFT ----------------
         Row {
@@ -54,7 +74,7 @@ Scope {
             id: batteryPill
 
             HoverHandler {
-              onHoveredChanged: wallpaperButton.pillHovered = hovered
+              onHoveredChanged: batteryPopup.pillHovered = hovered
             }
 
             text: {
@@ -85,13 +105,13 @@ Scope {
             lPad: 14
             rPad: 14
 
-            property real iconW: 24
-            property real iconGap: 8
+            property real iconW: 18
+            property real iconGap: 12
 
             // signal strength 0..1; 0 when not on wifi
             property real wifiSignal: networkPopup.activeWifi ? networkPopup.activeWifi.signalStrength : 0
 
-            contentWidth: iconW + iconGap + bwText.implicitWidth
+            contentWidth: iconW + bwText.implicitWidth
 
             HoverHandler {
               onHoveredChanged: networkPopup.pillHovered = hovered
@@ -154,9 +174,11 @@ Scope {
               id: bwText
               anchors.left: iconArea.right
               anchors.leftMargin: networkPill.iconGap
+              anchors.right: parent.parent.right
+              anchors.rightMargin: networkPill.borderWidth + networkPill.rPad 
               anchors.verticalCenter: parent.verticalCenter
               text: vars.net_status === "disconnected" ? ""
-                  : ("| " + vars.net_up + " 󰕒 | " + vars.net_down + " 󰇚")
+                  : ("| " + vars.net_up + " 󰕒 | " + vars.net_down + " 󰇚 ")
               color: vars.net_status === "disconnected" ? vars.redColor
                    : (vars.net_status === "wifi" || vars.net_status === "ethernet") ? vars.greenColor
                    : vars.warningColor
@@ -174,6 +196,10 @@ Scope {
             id: workspacePill
             lPad: 12
             rPad: 12
+
+            HoverHandler {
+              onHoveredChanged: wallpaperButton.pillHovered = hovered
+            }
 
             property int wsCount: 10
             property int dotSize: 12
@@ -309,6 +335,11 @@ Scope {
 
         WallpaperPicker {
           id: wallpaperPicker
+          anchorItem: workspacePill
+        }
+
+        BatteryPopup {
+          id: batteryPopup
           anchorItem: batteryPill
         }
 
@@ -350,8 +381,13 @@ Scope {
           implicitHeight: bridgeHeight + innerH + borderWidth * 2
           visible: isOpen
 
+          // Anchored under the workspaces pill, left-aligned with its left edge.
           anchor {
-            item: batteryPill
+            item: workspacePill
+            rect.x: 0
+            rect.y: 0
+            rect.width: wallpaperButton.width
+            rect.height: workspacePill.height
             edges: Edges.Bottom
             gravity: Edges.Bottom
             margins.top: 0
@@ -539,13 +575,15 @@ Scope {
               roundLeft: true; roundRight: false
               text: vars.vol_muted ? " Muted" : (" " + ("" + vars.vol).padStart(3, " ") + "% ")
               textColor: vars.pinkColor
-              onClicked: volToggle.running = true
+              onClicked: _toggleVol()
+              onScrolled: dir => _bumpVol(dir)
             }
             Pill {
               roundLeft: false; roundRight: true
               text: vars.mic_muted ? " Muted" : (" " + ("" + vars.mic).padStart(3, " ") + "% ")
               textColor: vars.pinkColor
-              onClicked: micToggle.running = true
+              onClicked: _toggleMic()
+              onScrolled: dir => _bumpMic(dir)
             }
           }
         }

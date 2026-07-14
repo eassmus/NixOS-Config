@@ -25,6 +25,8 @@ Item {
   // ---- interaction ----
   signal clicked()
   signal rightClicked()
+  // +1 = wheel up, -1 = wheel down
+  signal scrolled(int dir)
 
   // override to size pill around custom child content instead of the label
   property real contentWidth: label.implicitWidth
@@ -94,6 +96,15 @@ Item {
     onClicked: function(m) {
       if (m.button === Qt.RightButton) root.rightClicked()
       else root.clicked()
+    }
+    // accumulate wheel deltas so trackpad / hi-res mice still emit one
+    // step per natural "notch" instead of dozens of micro-events.
+    property int _wheelAcc: 0
+    onWheel: function(w) {
+      _wheelAcc += w.angleDelta.y
+      while (_wheelAcc >= 120)  { root.scrolled( 1); _wheelAcc -= 120 }
+      while (_wheelAcc <= -120) { root.scrolled(-1); _wheelAcc += 120 }
+      w.accepted = true
     }
   }
 }

@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 import QtQuick
 
@@ -73,7 +74,10 @@ Singleton {
   property string temp: "--"
   Process {
     id: tempProc
-    command: ["bash", "-c", "head -c 2 /sys/class/thermal/thermal_zone0/temp"]
+    command: ["bash", "-c",
+      "for h in /sys/class/hwmon/hwmon*; do " +
+      "[ \"$(cat \"$h/name\" 2>/dev/null)\" = k10temp ] && { " +
+      "awk '{printf \"%d\", $1/1000}' \"$h/temp1_input\" 2>/dev/null; break; }; done"]
     running: true
     stdout: StdioCollector { onStreamFinished: root.temp = this.text.trim() }
   }
@@ -196,32 +200,19 @@ Singleton {
     return s
   }
 
-  // ---------- Audio ----------
-  property string vol: "--"
-  property bool vol_muted: false
-  property string mic: "--"
-  property bool mic_muted: false
+  // ---------- Audio (native Pipewire bindings) ----------
+  // PwObjectTracker is what makes the default sink/source actually push
+  // property updates into QML — without it the bindings stay stale.
+  readonly property PwNode sink: Pipewire.defaultAudioSink
+  readonly property PwNode source: Pipewire.defaultAudioSource
+  PwObjectTracker { objects: [root.sink, root.source] }
 
-  Process {
-    id: volProc
-    command: ["bash", "-c", "pamixer --get-volume; pamixer --get-mute"]
-    running: true
-    stdout: StdioCollector { onStreamFinished: {
-      let lines = this.text.trim().split("\n");
-      root.vol = lines[0] || "--";
-      root.vol_muted = (lines[1] || "false").trim() === "true";
-    } }
-  }
-  Process {
-    id: micProc
-    command: ["bash", "-c", "pamixer --default-source --get-volume; pamixer --default-source --get-mute"]
-    running: true
-    stdout: StdioCollector { onStreamFinished: {
-      let lines = this.text.trim().split("\n");
-      root.mic = lines[0] || "--";
-      root.mic_muted = (lines[1] || "false").trim() === "true";
-    } }
-  }
+  readonly property string vol:
+    (sink && sink.ready) ? Math.round(sink.audio.volume * 100).toString() : "--"
+  readonly property bool vol_muted: !!(sink && sink.ready && sink.audio.muted)
+  readonly property string mic:
+    (source && source.ready) ? Math.round(source.audio.volume * 100).toString() : "--"
+  readonly property bool mic_muted: !!(source && source.ready && source.audio.muted)
 
   // ---------- Tick ----------
   Timer {
@@ -237,8 +228,6 @@ Singleton {
       vpnProc.running = true
       wsProc.running = true
       netProc.running = true
-      volProc.running = true
-      micProc.running = true
     }
   }
 }
