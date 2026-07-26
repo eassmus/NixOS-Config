@@ -11,7 +11,6 @@
     ls = "eza";
     tree = "eza --tree --git-ignore";
 
-    c = "clear";
     h = "history";
     mk = "(){ mkdir -p $1 }";
 
@@ -33,7 +32,15 @@
     e = "nvim";
     nivm = "nvim";
     cr = "claude --resume";
+    c = "claude";
 
-    size = "du -bsh $(ls -A) | sort -h";
+    g = "git";
+    gs = "git status";
+    ga = "git add";
+    gc = "git commit -m";
+    gpu = "git push";
+    gpd = "git pull";
+    
+    sl = "eza";
   };
 }

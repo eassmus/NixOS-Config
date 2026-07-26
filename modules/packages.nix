@@ -57,6 +57,7 @@
     bat
     hwinfo
     libinput
+    nethogs
     playerctl
     gtk3
     btop
