@@ -91,6 +91,16 @@ PopupWindow {
     listImagesProc.running = true
   }
 
+  // pick a random image from the current folder, excluding the one already set
+  // so a click always visibly changes something
+  function randomWallpaper() {
+    let pool = images.length > 1
+      ? images.filter(function (p) { return p !== root.currentWallpaper })
+      : images
+    if (pool.length === 0) return
+    root.setWallpaper(pool[Math.floor(Math.random() * pool.length)])
+  }
+
   onOpenChanged: if (open) {
     listFoldersProc.running = true
     readCurrentProc.running = true
@@ -177,12 +187,43 @@ PopupWindow {
       }
     }
 
+    // randomize button — picks a random wallpaper from the current folder
+    Rectangle {
+      id: randomBtn
+      anchors.right: closeBtn.left
+      anchors.rightMargin: 16
+      anchors.top: parent.top
+      width: 36
+      height: 36
+      radius: 18
+      enabled: root.images.length > 0
+      opacity: enabled ? 1 : 0.4
+      color: randomArea.containsMouse ? "#2a2a2a" : "transparent"
+      border.color: root.mainColor
+      border.width: 2
+      Text {
+        anchors.centerIn: parent
+        text: ""   // nf-fa-random (shuffle arrows)
+        color: root.mainColor
+        font.family: root.fontFamily
+        font.pixelSize: 18
+        font.bold: true
+      }
+      MouseArea {
+        id: randomArea
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.randomWallpaper()
+      }
+    }
+
     // ---- folder tabs (horizontally scrollable) ----
     Flickable {
       id: tabsScroll
       anchors.top: parent.top
       anchors.left: parent.left
-      anchors.right: closeBtn.left
+      anchors.right: randomBtn.left
       anchors.rightMargin: 12
       height: 36
       clip: true
