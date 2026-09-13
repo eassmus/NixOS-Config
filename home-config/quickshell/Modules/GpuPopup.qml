@@ -181,16 +181,24 @@ PopupWindow {
 
   // ---- layout ----
   property int innerPadding: 16
-  property int contentWidth: 440
+  property int contentWidth: 560
   property int rowH: 30
   property int utilColW: 80
   property int memColW: 120
   property int colGap: 12
 
+  // Fixed window at the tallest the card can get; only the drawn card is
+  // sized to content. Resizing a mapped popup remaps the surface and blinks.
+  readonly property int cardChrome: innerPadding * 2 + borderWidth * 2
+  readonly property int maxCardHeight: cardChrome
+    + 5 * rowH + 6 + 2 + 4 + rowH + maxProcs * rowH
+    + content.spacing * (8 + maxProcs)
+
   color: "transparent"
-  implicitWidth: contentWidth + innerPadding * 2 + borderWidth * 2
-  implicitHeight: bridgeHeight + content.implicitHeight + innerPadding * 2 + borderWidth * 2
+  implicitWidth: contentWidth + cardChrome
+  implicitHeight: bridgeHeight + maxCardHeight
   visible: open
+  mask: Region { item: cardArea }
 
   anchor {
     item: anchorItem
@@ -199,16 +207,24 @@ PopupWindow {
     margins.top: 0
   }
 
-  HoverHandler { onHoveredChanged: root.popupHovered = hovered }
+  // hover + input region: bridge gap plus the visible card only
+  Item {
+    id: cardArea
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    height: root.bridgeHeight + outer.height
+    HoverHandler { onHoveredChanged: root.popupHovered = hovered }
+  }
 
-  // gradient border + bg, offset down by bridgeHeight
+  // gradient border + bg, offset down by bridgeHeight, sized to content
   Rectangle {
     id: outer
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.bottom: parent.bottom
     anchors.top: parent.top
     anchors.topMargin: root.bridgeHeight
+    height: content.implicitHeight + root.cardChrome
     radius: root.radius
     gradient: Gradient {
       GradientStop { position: 0.0; color: root.gradTop }
@@ -232,37 +248,38 @@ PopupWindow {
     spacing: 6
 
     // ---- key/value stat rows ----
-    Repeater {
-      model: [
-        { k: "Utilization", v: root.stats ? root.stats.gpuUtil + " %" : "--" },
-        { k: "VRAM",        v: root.stats ? (root.stats.memUsed + " / " + root.stats.memTotal + " MiB") : "--" },
-        { k: "Temperature", v: root.stats ? root.stats.temp + " °C" : "--" },
-        { k: "Power",       v: root._powerStr() },
-        { k: "Fan",         v: root.stats ? (root._na(root.stats.fan) === "N/A" ? "N/A" : root.stats.fan + " %") : "--" }
-      ]
-      delegate: Item {
-        width: content.width
-        height: root.rowH
-        Text {
-          anchors.left: parent.left
-          anchors.verticalCenter: parent.verticalCenter
-          text: modelData.k
-          color: root.mainColor
-          font.family: root.fontFamily
-          font.pixelSize: 22
-          font.bold: true
-        }
-        Text {
-          anchors.right: parent.right
-          anchors.verticalCenter: parent.verticalCenter
-          text: modelData.v
-          color: root.pinkColor
-          font.family: root.fontFamily
-          font.pixelSize: 22
-          font.bold: true
-        }
+    // static rows: a Repeater over an inline array rebuilds every delegate
+    // each time any value changes
+    component StatRow: Item {
+      property string k
+      property string v
+      width: content.width
+      height: root.rowH
+      Text {
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        text: k
+        color: root.mainColor
+        font.family: root.fontFamily
+        font.pixelSize: 22
+        font.bold: true
+      }
+      Text {
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        text: v
+        color: root.pinkColor
+        font.family: root.fontFamily
+        font.pixelSize: 22
+        font.bold: true
       }
     }
+
+    StatRow { k: "Utilization"; v: root.stats ? root.stats.gpuUtil + " %" : "--" }
+    StatRow { k: "VRAM";        v: root.stats ? (root.stats.memUsed + " / " + root.stats.memTotal + " MiB") : "--" }
+    StatRow { k: "Temperature"; v: root.stats ? root.stats.temp + " °C" : "--" }
+    StatRow { k: "Power";       v: root._powerStr() }
+    StatRow { k: "Fan";         v: root.stats ? (root._na(root.stats.fan) === "N/A" ? "N/A" : root.stats.fan + " %") : "--" }
 
     Item { width: 1; height: 6 }
 
@@ -316,9 +333,14 @@ PopupWindow {
       font.pixelSize: 22
     }
 
+    // fixed slot pool bound to procs[index] so per-poll array replacement
+    // doesn't tear down and rebuild every row
     Repeater {
-      model: root.procs.slice(0, root.maxProcs)
+      model: root.maxProcs
       delegate: Item {
+        required property int index
+        property var p: root.procs[index]
+        visible: !!p
         width: content.width
         height: root.rowH
         Text {
@@ -326,7 +348,7 @@ PopupWindow {
           anchors.right: pUtil.left
           anchors.rightMargin: root.colGap
           anchors.verticalCenter: parent.verticalCenter
-          text: modelData.name
+          text: p ? p.name : ""
           color: root.mainColor
           font.family: root.fontFamily
           font.pixelSize: 22
@@ -340,7 +362,7 @@ PopupWindow {
           anchors.verticalCenter: parent.verticalCenter
           width: root.utilColW
           horizontalAlignment: Text.AlignRight
-          text: root._utilStr(modelData.pid)
+          text: p ? root._utilStr(p.pid) : ""
           color: root.mainColor
           font.family: root.fontFamily
           font.pixelSize: 22
@@ -352,7 +374,7 @@ PopupWindow {
           anchors.verticalCenter: parent.verticalCenter
           width: root.memColW
           horizontalAlignment: Text.AlignRight
-          text: modelData.mem + " MiB"
+          text: p ? p.mem + " MiB" : ""
           color: root.pinkColor
           font.family: root.fontFamily
           font.pixelSize: 22

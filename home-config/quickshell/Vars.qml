@@ -4,7 +4,7 @@ import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 import QtQuick
 
-Singleton {
+Scope {
   id: root
 
   // ---------- Palette ----------
@@ -43,9 +43,7 @@ Singleton {
     let rawSeconds = UPower.onBattery
         ? UPower.displayDevice.timeToEmpty
         : UPower.displayDevice.timeToFull;
-    if (rawSeconds <= 0) {
-      return !UPower.onBattery ? "--:--" : "--:--";
-    }
+    if (rawSeconds <= 0) return "--:--";
     let hours = Math.floor(rawSeconds / 3600);
     let minutes = Math.floor((rawSeconds % 3600) / 60);
     let paddedMinutes = minutes < 10 ? "0" + minutes : minutes;
@@ -100,22 +98,13 @@ Singleton {
     stdout: StdioCollector { onStreamFinished: root.vpn_up = this.text.trim() }
   }
 
-  // ---------- Workspace ----------
-  property string workspace: "1"
-  Process {
-    id: wsProc
-    command: ["bash", "-c", "hyprctl activeworkspace -j | grep '^    \"name\": \"' | cut -c14"]
-    running: true
-    stdout: StdioCollector { onStreamFinished: root.workspace = this.text.trim() }
-  }
-
   // ---------- Network ----------
   // status: "wifi" | "ethernet" | "disconnected"
   property string net_status: "disconnected"
   property string net_up: "   0b/s"
   property string net_down: "   0b/s"
-  property string net_essid: ""
-  property string net_signal: ""
+  property real net_up_bps: 0
+  property real net_down_bps: 0
 
   property real _netLastTx: -1
   property real _netLastRx: -1
@@ -129,9 +118,7 @@ Singleton {
       "  echo \"ethernet $IF\";" +
       "elif nmcli -t -f DEVICE,TYPE,STATE device | grep -q ':wifi:connected'; then " +
       "  IF=$(nmcli -t -f DEVICE,TYPE,STATE device | grep ':wifi:connected' | head -n1 | cut -d: -f1); " +
-      "  SSID=$(nmcli -t -f active,ssid dev wifi | grep '^yes' | cut -d: -f2);" +
-      "  SIG=$(nmcli -t -f active,signal dev wifi | grep '^yes' | cut -d: -f2);" +
-      "  echo \"wifi $IF $SIG $SSID\";" +
+      "  echo \"wifi $IF\";" +
       "else echo disconnected; fi"
     ]
     running: true
@@ -143,13 +130,13 @@ Singleton {
         root._readBandwidth(parts[1]);
       } else if (parts[0] === "wifi") {
         root.net_status = "wifi";
-        root.net_signal = parts[2] || "";
-        root.net_essid = parts.slice(3).join(" ");
         root._readBandwidth(parts[1]);
       } else {
         root.net_status = "disconnected";
         root.net_up = "   0b/s";
         root.net_down = "   0b/s";
+        root.net_up_bps = 0;
+        root.net_down_bps = 0;
       }
     } }
   }
@@ -171,6 +158,8 @@ Singleton {
         if (dt > 0) {
           let upBps  = Math.max(0, (tx - root._netLastTx) * 8 / dt);
           let downBps = Math.max(0, (rx - root._netLastRx) * 8 / dt);
+          root.net_up_bps   = upBps;
+          root.net_down_bps = downBps;
           root.net_up   = root._fmtBits(upBps);
           root.net_down = root._fmtBits(downBps);
         }
@@ -182,6 +171,9 @@ Singleton {
   }
 
   function _readBandwidth(iface) {
+    // counters are per-interface, so a wifi→ethernet switch would otherwise
+    // diff two unrelated byte counts and show one bogus multi-Gb/s spike
+    if (iface !== bwProc.iface) { root._netLastTx = -1; root._netLastT = 0; }
     bwProc.iface = iface;
     bwProc.running = true;
   }
@@ -226,7 +218,6 @@ Singleton {
       tempProc.running = true
       fanProc.running = true
       vpnProc.running = true
-      wsProc.running = true
       netProc.running = true
     }
   }

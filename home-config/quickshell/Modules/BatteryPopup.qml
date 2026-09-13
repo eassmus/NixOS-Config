@@ -74,8 +74,13 @@ PopupWindow {
   property int innerPadding: 18
   property int innerGap: 40   // space between the label and the value
 
+  // size to the widest strings each column can show rather than the live text,
+  // so a digit-count change ("9.9 W" → "10.0 W") doesn't resize (and blink) the popup
+  TextMetrics { id: labelM; font.family: root.fontFamily; font.pixelSize: 22; font.bold: true; text: "Discharging" }
+  TextMetrics { id: valueM; font.family: root.fontFamily; font.pixelSize: 22; font.bold: true; text: "−100.0 W" }
+
   color: "transparent"
-  implicitWidth: Math.ceil(labelTxt.implicitWidth + innerGap + valueTxt.implicitWidth
+  implicitWidth: Math.ceil(labelM.width + innerGap + valueM.width
                            + innerPadding * 2 + borderWidth * 2)
   implicitHeight: bridgeHeight + 42 + borderWidth * 2
   visible: open

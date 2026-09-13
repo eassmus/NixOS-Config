@@ -8,6 +8,9 @@ PopupWindow {
 
   // ---- API ----
   property var anchorItem: null
+  // sibling of anchorItem whose left edge the popup must not cross
+  property var leftLimitItem: null
+  property var sharedVars: null
   property bool open: false
   property bool pillHovered: false
   property bool popupHovered: false
@@ -37,12 +40,12 @@ PopupWindow {
   property int bridgeHeight: 20
 
   // ---- state derived from Quickshell.Networking ----
-  readonly property var _devices: Networking.devices ? Networking.devices.values : []
+  readonly property var netDevices: Networking.devices ? Networking.devices.values : []
 
   // currently-connected wifi network (or null)
   readonly property var activeWifi: {
-    for (let i = 0; i < _devices.length; i++) {
-      let d = _devices[i]
+    for (let i = 0; i < netDevices.length; i++) {
+      let d = netDevices[i]
       if (d.type !== DeviceType.Wifi) continue
       let nets = d.networks ? d.networks.values : []
       for (let j = 0; j < nets.length; j++) {
@@ -53,8 +56,8 @@ PopupWindow {
   }
 
   readonly property bool wiredConnected: {
-    for (let i = 0; i < _devices.length; i++) {
-      if (_devices[i].type === DeviceType.Wired && _devices[i].connected) return true
+    for (let i = 0; i < netDevices.length; i++) {
+      if (netDevices[i].type === DeviceType.Wired && netDevices[i].connected) return true
     }
     return false
   }
@@ -62,8 +65,8 @@ PopupWindow {
   // visible wifi networks (excluding the active one), strongest first
   readonly property var availableWifi: {
     let nets = []
-    for (let i = 0; i < _devices.length; i++) {
-      let d = _devices[i]
+    for (let i = 0; i < netDevices.length; i++) {
+      let d = netDevices[i]
       if (d.type !== DeviceType.Wifi) continue
       let dn = d.networks ? d.networks.values : []
       for (let j = 0; j < dn.length; j++) {
@@ -74,12 +77,14 @@ PopupWindow {
     return nets
   }
 
-  // enable scanning on every wifi device so availableWifi stays fresh
+  // enable scanning on every wifi device so availableWifi stays fresh.
+  // Triggered on device add/remove, not on activeWifi — flipping scannerEnabled
+  // from inside activeWifi's own change notification caused a binding loop.
   Component.onCompleted: _enableScanning()
-  onActiveWifiChanged: _enableScanning()
+  onNetDevicesChanged: _enableScanning()
   function _enableScanning() {
-    for (let i = 0; i < _devices.length; i++) {
-      let d = _devices[i]
+    for (let i = 0; i < netDevices.length; i++) {
+      let d = netDevices[i]
       if (d.type === DeviceType.Wifi && "scannerEnabled" in d) d.scannerEnabled = true
     }
   }
@@ -87,10 +92,18 @@ PopupWindow {
   // ---- per-process bandwidth (nethogs trace mode) ----
   // nethogs needs cap_net_raw/cap_net_admin/cap_dac_read_search/cap_sys_ptrace;
   // it's wrapped in modules/security.nix so it runs without a root prompt.
-  property var procs: []       // [ { name, down, up } ] sorted desc by down+up
-  property real totalDown: 0   // KB/s, summed across all processes nethogs sees
-  property real totalUp: 0
-  property int maxProcs: 6
+  // Per-process rates are stored in bits/s so they format with the same
+  // scale/labels as the pill's totals (which come from Vars.net_{up,down}_bps).
+  property var procs: []       // [ { name, down, up } ] in bits/s, sorted desc by down+up
+  property int maxProcs: 20
+  // nethogs takes a few sampling windows before it can correlate sockets to
+  // PIDs, so early parses are often empty even when there's real traffic.
+  // Trust the "empty" state only after either a non-empty parse arrives or
+  // we've seen enough sampling windows to be confident it's really idle.
+  property int _parseCount: 0
+  readonly property bool nethogsReady: procs.length > 0 || _parseCount >= 4
+
+  onOpenChanged: if (!open) { _parseCount = 0; procs = [] }
 
   // nethogs runs continuously while the popup is open and prints one
   // "Refreshing:" block per -d-second window; SplitParser hands us each
@@ -100,7 +113,7 @@ PopupWindow {
   // doesn't reliably exit under live traffic and just produced no data at all.
   Process {
     id: nethogsProc
-    command: ["nethogs", "-t", "-C", "-d", "1"]
+    command: ["nethogs", "-t", "-C", "-d", "0.4"]
     running: root.open
     stdout: SplitParser {
       splitMarker: "\nRefreshing:\n"
@@ -119,10 +132,13 @@ PopupWindow {
     return b.replace(/-wrapped$/, "")
   }
 
+  // nethogs -t outputs sent/recv in KB/s (kilobytes) — convert to bits/s so
+  // per-process rows share the same scale and formatter as the pill totals.
+  readonly property real _kbToBits: 1024 * 8
+
   function _parseNethogs(text) {
     let lines = text.split("\n")
     let out = []
-    let down = 0, up = 0
     for (let i = 0; i < lines.length; i++) {
       let l = lines[i]
       if (!l) continue
@@ -131,8 +147,6 @@ PopupWindow {
       let sent = parseFloat(t[1])
       let recv = parseFloat(t[2])
       if (isNaN(sent) || isNaN(recv)) continue
-      up += sent
-      down += recv
       if (sent === 0 && recv === 0) continue
       // id field is "path/pid/uid" — split from the right since paths
       // themselves contain slashes
@@ -142,58 +156,84 @@ PopupWindow {
       let pidIdx = rest.lastIndexOf("/")
       let path = rest.slice(0, pidIdx)
       // nethogs couldn't map this connection's socket back to a pid at all
-      // (common for UDP/QUIC traffic) — nothing to name, so skip the row but
-      // keep it in the totals above
+      // (common for UDP/QUIC traffic) — skip it since we can't name the row
       if (path.indexOf("unknown ") === 0) continue
-      out.push({ name: root._basename(path), down: recv, up: sent })
+      out.push({ name: root._basename(path), down: recv * root._kbToBits, up: sent * root._kbToBits })
     }
     out.sort(function (a, b) { return (b.down + b.up) - (a.down + a.up) })
     root.procs = out
-    root.totalDown = down
-    root.totalUp = up
+    root._parseCount += 1
   }
 
-  // same unit casing as the network pill's _fmtBits (b/s, kb/s, Mb/s, Gb/s)
-  function _fmtRate(kbps) {
-    let v = kbps
-    let units = ["kb/s", "Mb/s", "Gb/s"]
+  // Mirrors Vars._fmtBits so popup rates use the exact scale/labels as the pill.
+  function _fmtBits(b) {
+    let units = ["b/s", "kb/s", "Mb/s", "Gb/s"]
     let i = 0
-    while (v >= 1000 && i < units.length - 1) { v /= 1000; i++ }
-    if (i === 0 && v < 1) return Math.round(v * 1024) + " b/s"
-    if (v < 10) return v.toFixed(1) + " " + units[i]
-    return Math.round(v) + " " + units[i]
+    while (b >= 1000 && i < units.length - 1) { b /= 1000; i++ }
+    if (i === 0)     return Math.round(b) + " " + units[i]
+    if (b < 10)      return b.toFixed(1)  + " " + units[i]
+    return Math.round(b) + " " + units[i]
   }
 
   // ---- layout ----
   property int innerPadding: 16
-  property int contentWidth: 460
+  property int contentWidth: 560
   property int rowH: 30
   property int rateColW: 90
   property int colGap: 12
   property int rateGap: 32
 
-  color: "transparent"
-  implicitWidth: contentWidth + innerPadding * 2 + borderWidth * 2
-  implicitHeight: bridgeHeight + content.implicitHeight + innerPadding * 2 + borderWidth * 2
-  visible: open
+  // The window is fixed at the tallest the card can ever get (header rows +
+  // maxProcs process rows) and only the drawn card grows inside it. Resizing
+  // a mapped popup remaps the surface, which blinks every time the process
+  // count changes; a fixed window never resizes. Input is masked to the card.
+  readonly property int cardChrome: innerPadding * 2 + borderWidth * 2
+  readonly property int maxCardHeight: cardChrome
+    + 4 * rowH + 6 + 2 + 4 + rowH + maxProcs * rowH
+    + content.spacing * (7 + maxProcs)
 
+  color: "transparent"
+  implicitWidth: contentWidth + cardChrome
+  implicitHeight: bridgeHeight + maxCardHeight
+  visible: open
+  mask: Region { item: cardArea }
+
+  // centered under the pill, but never further left than leftLimitItem
   anchor {
     item: anchorItem
+    rect.x: {
+      if (!anchorItem) return 0
+      let centered = (anchorItem.width - root.width) / 2
+      if (!leftLimitItem) return centered
+      return Math.max(centered, leftLimitItem.x - anchorItem.x)
+    }
+    rect.y: 0
+    rect.width: root.width
+    rect.height: anchorItem ? anchorItem.height : 0
     edges: Edges.Bottom
     gravity: Edges.Bottom
     margins.top: 0
   }
 
-  HoverHandler { onHoveredChanged: root.popupHovered = hovered }
+  // hover + input region: the bridge gap plus the visible card, not the
+  // transparent slack below it
+  Item {
+    id: cardArea
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    height: root.bridgeHeight + outer.height
+    HoverHandler { onHoveredChanged: root.popupHovered = hovered }
+  }
 
-  // gradient border + bg, offset down by bridgeHeight
+  // gradient border + bg, offset down by bridgeHeight, sized to content
   Rectangle {
     id: outer
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.bottom: parent.bottom
     anchors.top: parent.top
     anchors.topMargin: root.bridgeHeight
+    height: content.implicitHeight + root.cardChrome
     radius: root.radius
     gradient: Gradient {
       GradientStop { position: 0.0; color: root.gradTop }
@@ -217,39 +257,50 @@ PopupWindow {
     spacing: 6
 
     // ---- headline stat rows ----
-    Repeater {
-      model: [
-        { k: "Network", v: (function () {
-            if (root.activeWifi) return root.activeWifi.name || "(unknown)"
-            if (root.wiredConnected) return "Ethernet"
-            return "Disconnected"
-          })() },
-        { k: "Signal",  v: root.activeWifi ? (Math.round(root.activeWifi.signalStrength * 100) + " %") : "--" },
-        { k: "Down",    v: root._fmtRate(root.totalDown) + " 󰇚" },
-        { k: "Up",      v: root._fmtRate(root.totalUp) + " 󰕒" }
-      ]
-      delegate: Item {
-        width: content.width
-        height: root.rowH
-        Text {
-          anchors.left: parent.left
-          anchors.verticalCenter: parent.verticalCenter
-          text: modelData.k
-          color: root.mainColor
-          font.family: root.fontFamily
-          font.pixelSize: 22
-          font.bold: true
-        }
-        Text {
-          anchors.right: parent.right
-          anchors.verticalCenter: parent.verticalCenter
-          text: modelData.v
-          color: root.pinkColor
-          font.family: root.fontFamily
-          font.pixelSize: 22
-          font.bold: true
-        }
+    // Static rows rather than a Repeater over an inline array: an array
+    // literal is a new model every time any value in it changes, which
+    // destroys and recreates every delegate each tick and flickers.
+    component StatRow: Item {
+      property string k
+      property string v
+      width: content.width
+      height: root.rowH
+      Text {
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        text: k
+        color: root.mainColor
+        font.family: root.fontFamily
+        font.pixelSize: 22
+        font.bold: true
       }
+      Text {
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        text: v
+        color: root.pinkColor
+        font.family: root.fontFamily
+        font.pixelSize: 22
+        font.bold: true
+      }
+    }
+
+    StatRow {
+      k: "Network"
+      v: root.activeWifi ? (root.activeWifi.name || "(unknown)")
+       : root.wiredConnected ? "Ethernet" : "Disconnected"
+    }
+    StatRow {
+      k: "Signal"
+      v: root.activeWifi ? (Math.round(root.activeWifi.signalStrength * 100) + " %") : "--"
+    }
+    StatRow {
+      k: "Down"
+      v: root._fmtBits(root.sharedVars ? root.sharedVars.net_down_bps : 0) + " 󰇚"
+    }
+    StatRow {
+      k: "Up"
+      v: root._fmtBits(root.sharedVars ? root.sharedVars.net_up_bps : 0) + " 󰕒"
     }
 
     Item { width: 1; height: 6 }
@@ -268,25 +319,25 @@ PopupWindow {
       width: content.width
       height: root.rowH
       Text {
-        id: hDown
-        anchors.right: hUp.left
+        id: hUp
+        anchors.right: hDown.left
         anchors.rightMargin: root.rateGap
         anchors.verticalCenter: parent.verticalCenter
         width: root.rateColW
         horizontalAlignment: Text.AlignRight
-        text: "󰇚"
+        text: "󰕒"
         color: root.dimColor
         font.family: root.fontFamily
         font.pixelSize: 22
         font.bold: true
       }
       Text {
-        id: hUp
+        id: hDown
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         width: root.rateColW
         horizontalAlignment: Text.AlignRight
-        text: "󰕒"
+        text: "󰇚"
         color: root.dimColor
         font.family: root.fontFamily
         font.pixelSize: 22
@@ -298,23 +349,29 @@ PopupWindow {
     Text {
       width: content.width
       visible: root.procs.length === 0
-      text: "No active connections"
+      text: root.nethogsReady ? "No active connections" : "Loading…"
       color: root.dimColor
       font.family: root.fontFamily
       font.pixelSize: 22
     }
 
+    // Fixed pool of row slots bound to procs[index] instead of a Repeater over
+    // the procs array itself — a fresh array every 0.4s nethogs tick would
+    // otherwise tear down and rebuild every row.
     Repeater {
-      model: root.procs.slice(0, root.maxProcs)
+      model: root.maxProcs
       delegate: Item {
+        required property int index
+        property var p: root.procs[index]
+        visible: !!p
         width: content.width
         height: root.rowH
         Text {
           anchors.left: parent.left
-          anchors.right: pDown.left
+          anchors.right: pUp.left
           anchors.rightMargin: root.colGap
           anchors.verticalCenter: parent.verticalCenter
-          text: modelData.name
+          text: p ? p.name : ""
           color: root.mainColor
           font.family: root.fontFamily
           font.pixelSize: 22
@@ -322,26 +379,26 @@ PopupWindow {
           elide: Text.ElideRight
         }
         Text {
-          id: pDown
-          anchors.right: pUp.left
+          id: pUp
+          anchors.right: pDown.left
           anchors.rightMargin: root.rateGap
           anchors.verticalCenter: parent.verticalCenter
           width: root.rateColW
           horizontalAlignment: Text.AlignRight
-          text: root._fmtRate(modelData.down)
-          color: root.mainColor
+          text: p ? root._fmtBits(p.up) : ""
+          color: root.pinkColor
           font.family: root.fontFamily
           font.pixelSize: 22
           font.bold: true
         }
         Text {
-          id: pUp
+          id: pDown
           anchors.right: parent.right
           anchors.verticalCenter: parent.verticalCenter
           width: root.rateColW
           horizontalAlignment: Text.AlignRight
-          text: root._fmtRate(modelData.up)
-          color: root.pinkColor
+          text: p ? root._fmtBits(p.down) : ""
+          color: root.mainColor
           font.family: root.fontFamily
           font.pixelSize: 22
           font.bold: true

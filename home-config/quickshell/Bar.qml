@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Pipewire
+import Quickshell.Wayland
 import Quickshell.Widgets
 import QtQuick
 import "Modules"
@@ -23,6 +24,15 @@ Scope {
         anchors { top: true; left: true; right: true }
         implicitHeight: 74
 
+        // Sit on the `bottom` layer instead of the default `top`. Layer-shell
+        // orders surfaces background < bottom < normal windows < top < overlay,
+        // so on `top` nothing can ever draw over the bar — including a
+        // popped-out video. The exclusive zone still reserves the bar's strip
+        // regardless of layer, so tiled windows are laid out below it as
+        // before; only floating windows (PiP), which can be positioned freely,
+        // are now able to sit over the bar.
+        WlrLayershell.layer: WlrLayer.Bottom
+
         // invisible full-bar item used as an anchor target for popups that need
         // to position themselves relative to the bar / screen (PopupWindow.anchor
         // requires an Item, and PanelWindow itself is a Window).
@@ -33,7 +43,6 @@ Scope {
         }
 
         // -- helper processes --
-        Process { id: wsDispatch }
         Process { id: kittyBtop;   command: ["kitty", "-e", "btop"] }
         Process { id: kittyNvtop;  command: ["kitty", "-e", "nvtop"] }
         Process { id: nmtuiLaunch; command: ["kitty", "-e", "nmtui"] }
@@ -79,7 +88,7 @@ Scope {
 
             text: {
               let s = vars.bat_state
-              if (vars.on_ac) return "󰚥"
+              if (vars.bat_onac) return "󰚥"
               if (s === "Full") return "󰚥"
               if (s === "Empty") return "Goodbye"
               if (s === "Unknown") return "Unknown"
@@ -111,7 +120,7 @@ Scope {
             // signal strength 0..1; 0 when not on wifi
             property real wifiSignal: networkPopup.activeWifi ? networkPopup.activeWifi.signalStrength : 0
 
-            contentWidth: iconW + bwText.implicitWidth
+            contentWidth: iconW + iconGap + bwText.implicitWidth
 
             HoverHandler {
               onHoveredChanged: networkPopup.pillHovered = hovered
@@ -174,8 +183,6 @@ Scope {
               id: bwText
               anchors.left: iconArea.right
               anchors.leftMargin: networkPill.iconGap
-              anchors.right: parent.parent.right
-              anchors.rightMargin: networkPill.borderWidth + networkPill.rPad 
               anchors.verticalCenter: parent.verticalCenter
               text: vars.net_status === "disconnected" ? ""
                   : ("| " + vars.net_up + " 󰕒 | " + vars.net_down + " 󰇚 ")
@@ -316,6 +323,8 @@ Scope {
         NetworkPopup {
           id: networkPopup
           anchorItem: networkPill
+          leftLimitItem: batteryPill
+          sharedVars: vars
         }
 
         AudioPopup {
@@ -343,7 +352,7 @@ Scope {
           anchorItem: batteryPill
         }
 
-        // Hover-revealed button under the battery pill that opens the wallpaper picker.
+        // Hover-revealed button under the workspaces pill that opens the wallpaper picker.
         // Sized + styled to match the other hover popups: gradient border, 42px
         // inner height, 20px bridge, default centered placement under the pill.
         PopupWindow {
