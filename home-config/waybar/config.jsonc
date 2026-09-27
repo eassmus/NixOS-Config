@@ -1,6 +1,7 @@
 {
   "position": "top",
   "mod": "dock",
+  "output": "eDP-1",
   "exclusive": true,
   "passthrough": false,
   "gtk-layer-shell": true,
@@ -25,7 +26,7 @@
     "pulseaudio#microphone"
   ],
   "custom/fan_mode": {
-    "exec" : "asusctl profile --profile-get | tail -n +2 | cut -c 19-19 | /home/pulsar/.config/waybar/scripts/fan-speed.sh",
+    "exec" : "asusctl profile --profile-get | tail -n 3 | head -n 1 | cut -c 19-19 | /home/pulsar/.config/waybar/scripts/fan-speed.sh",
     "tooltip": false,
     "format" : "{} ",
     "interval": 1,

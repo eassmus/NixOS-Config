@@ -11,6 +11,12 @@
     ./modules
   ];
 
+  fileSystems."/windows" = {
+    device = "/dev/disk/by-uuid/8C9C3FC79C3FAB1A";
+    fsType = "ntfs"; 
+    options = [ "nofail" ];
+  };
+
   users.users.pulsar = {
     isNormalUser = true;
     initialPassword = "pw123";

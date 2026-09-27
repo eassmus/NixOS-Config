@@ -47,7 +47,7 @@ Scope {
         Process { id: kittyNvtop;  command: ["kitty", "-e", "nvtop"] }
         Process { id: nmtuiLaunch; command: ["kitty", "-e", "nmtui"] }
         Process { id: batLogout;   command: ["wlogout"] }
-        Process { id: fanCycle }
+        Process { id: fanCycle; onExited: vars.refreshFan() }
         // Native Pipewire helpers — no subprocess round-trip, no polling lag.
         function _toggleVol() {
           let n = Pipewire.defaultAudioSink
@@ -212,30 +212,6 @@ Scope {
             property int dotSpacing: 10
             property real currentDotHeight: dotSize * 1.9
 
-            // map of workspace id → window count, polled from hyprctl
-            property var wsWindowCounts: ({})
-
-            Process {
-              id: wsInfoProc
-              command: ["hyprctl", "workspaces", "-j"]
-              running: true
-              stdout: StdioCollector {
-                onStreamFinished: {
-                  try {
-                    let arr = JSON.parse(this.text)
-                    let counts = {}
-                    for (let i = 0; i < arr.length; i++) counts[arr[i].id] = arr[i].windows
-                    workspacePill.wsWindowCounts = counts
-                  } catch (e) {}
-                }
-              }
-            }
-            Timer {
-              interval: 1000
-              running: true
-              repeat: true
-              onTriggered: wsInfoProc.running = true
-            }
 
             contentWidth: wsCount * dotSize + (wsCount - 1) * dotSpacing
 
@@ -264,7 +240,10 @@ Scope {
                   id: wsItem
                   property int wsId: index + 1
                   property bool current: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === wsId
-                  property bool occupied: (workspacePill.wsWindowCounts[wsId] || 0) > 0
+                  property bool occupied: {
+                    let ws = Hyprland.workspaces.values.find(w => w.id === wsId)
+                    return !!ws && ws.toplevels.values.length > 0
+                  }
                   width: workspacePill.dotSize
                   // wrapper is always tall enough for the extended dot so the row's
                   // overall height (and vertical centering) stays stable
@@ -348,6 +327,7 @@ Scope {
 
         // shared by the temp and fan pills
         ThermalPopup {
+          id: thermalPopup
           anchorItem: tempPill
           pillHovered: tempHover.hovered || fanHover.hovered
         }
@@ -523,7 +503,7 @@ Scope {
               id: tempPill
               HoverHandler { id: tempHover }
               roundLeft: false; roundRight: false
-              text: " " + vars.temp
+              text: " " + (thermalPopup.cpuTemp !== undefined ? Math.round(thermalPopup.cpuTemp) : "--")
               textColor: vars.mainColor
               onClicked: kittyBtop.running = true
             }

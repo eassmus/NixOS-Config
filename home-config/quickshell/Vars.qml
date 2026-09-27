@@ -1,9 +1,13 @@
 import Quickshell
 import Quickshell.Io
+import Quickshell.Networking
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 import QtQuick
 
+// Most values here come from files read in-process (FileView) or from
+// Quickshell's event-driven services; only the GPU and fan-profile checks
+// still spawn a process, and on slower timers.
 Scope {
   id: root
 
@@ -16,14 +20,8 @@ Scope {
   readonly property color bgColor: "#161616"
 
   // ---------- Time ----------
-  property string time
-
-  Process {
-    id: dateGet
-    command: ["date", "+%I:%M %p | %A | %m-%d-%Y"]
-    running: true
-    stdout: StdioCollector { onStreamFinished: root.time = this.text.trim() }
-  }
+  SystemClock { id: clock; precision: SystemClock.Minutes }
+  readonly property string time: Qt.formatDateTime(clock.date, "hh:mm AP | dddd | MM-dd-yyyy")
 
   // ---------- Battery (UPower) ----------
   readonly property int bat_percent: Math.round(UPower.displayDevice.percentage * 100)
@@ -50,16 +48,25 @@ Scope {
     return hours + ":" + paddedMinutes;
   }
 
-  // ---------- CPU usage ----------
+  // ---------- CPU usage (/proc/stat delta, "idle" = idle + iowait) ----------
   property string cpu_usage: "--"
-  Process {
-    id: cpuProc
-    command: ["bash", "/home/pulsar/.config/waybar/scripts/cpu_usage.sh"]
-    running: true
-    stdout: StdioCollector { onStreamFinished: root.cpu_usage = this.text.trim() }
+  property var _cpuLast: null
+  FileView { id: procStat; path: "/proc/stat"; blockLoading: true }
+  function _sampleCpu() {
+    procStat.reload()
+    let f = procStat.text().split("\n")[0].trim().split(/\s+/).slice(1, 8).map(Number)
+    let idle = f[3] + f[4]
+    let total = f.reduce((a, b) => a + b, 0)
+    if (_cpuLast && total > _cpuLast.total) {
+      let u = 1 - (idle - _cpuLast.idle) / (total - _cpuLast.total)
+      cpu_usage = String(Math.round(100 * u)).padStart(2, " ")
+    }
+    _cpuLast = { total: total, idle: idle }
   }
 
   // ---------- GPU usage ----------
+  // get_gpu_busy.sh gates nvidia-smi on the dGPU's runtime-PM state so the
+  // card can stay suspended; polled slower since it's the costliest check
   property string gpu_usage: "󰢮 ---"
   Process {
     id: gpuProc
@@ -67,20 +74,10 @@ Scope {
     running: true
     stdout: StdioCollector { onStreamFinished: root.gpu_usage = this.text.trim() }
   }
-
-  // ---------- Temperature ----------
-  property string temp: "--"
-  Process {
-    id: tempProc
-    command: ["bash", "-c",
-      "for h in /sys/class/hwmon/hwmon*; do " +
-      "[ \"$(cat \"$h/name\" 2>/dev/null)\" = k10temp ] && { " +
-      "awk '{printf \"%d\", $1/1000}' \"$h/temp1_input\" 2>/dev/null; break; }; done"]
-    running: true
-    stdout: StdioCollector { onStreamFinished: root.temp = this.text.trim() }
-  }
+  Timer { interval: 2000; running: true; repeat: true; onTriggered: gpuProc.running = true }
 
   // ---------- Fan / Power profile ----------
+  // changes on click (refreshFan) or via Fn+F5, hence the slow poll
   property string fan_mode: ""
   readonly property var _fanIcons: ({ "Quiet": "󰾆", "Balanced": "󰾅", "Performance": "󰓅" })
   Process {
@@ -92,94 +89,71 @@ Scope {
       root.fan_mode = root._fanIcons[p] || p
     } }
   }
+  function refreshFan() { fanProc.running = true }
+  Timer { interval: 3000; running: true; repeat: true; onTriggered: root.refreshFan() }
 
   // ---------- VPN ----------
+  // openconnect brings up tun0; its presence is the signal
   property string vpn_up: ""
-  Process {
-    id: vpnProc
-    command: ["bash", "/home/pulsar/.config/waybar/scripts/vpn_up.sh"]
-    running: true
-    stdout: StdioCollector { onStreamFinished: root.vpn_up = this.text.trim() }
+  FileView {
+    id: tunFile
+    path: "/sys/class/net/tun0/operstate"
+    blockLoading: true
+    printErrors: false
+    onLoaded: root.vpn_up = ""
+    onLoadFailed: root.vpn_up = ""
   }
+  Timer { interval: 2000; running: true; repeat: true; onTriggered: tunFile.reload() }
 
   // ---------- Network ----------
+  readonly property var _netDevs: Networking.devices ? Networking.devices.values : []
+  // connected device, ethernet preferred over wifi
+  readonly property var _netDev: {
+    let wifi = null
+    for (let i = 0; i < _netDevs.length; i++) {
+      let d = _netDevs[i]
+      if (!d.connected) continue
+      if (d.type === DeviceType.Wired) return d
+      if (d.type === DeviceType.Wifi && !wifi) wifi = d
+    }
+    return wifi
+  }
   // status: "wifi" | "ethernet" | "disconnected"
-  property string net_status: "disconnected"
-  property string net_up: "   0b/s"
-  property string net_down: "   0b/s"
+  readonly property string net_status: !_netDev ? "disconnected"
+    : _netDev.type === DeviceType.Wired ? "ethernet" : "wifi"
+  readonly property string netIface: _netDev ? _netDev.name : ""
+
   property real net_up_bps: 0
   property real net_down_bps: 0
+  readonly property string net_up: _fmtBits(net_up_bps)
+  readonly property string net_down: _fmtBits(net_down_bps)
 
-  property real _netLastTx: -1
-  property real _netLastRx: -1
+  property real _netLastTx: 0
+  property real _netLastRx: 0
   property real _netLastT: 0
+  // counters are per-interface, so a wifi→ethernet switch would otherwise
+  // diff two unrelated byte counts and show one bogus multi-Gb/s spike
+  onNetIfaceChanged: _netLastT = 0
 
-  Process {
-    id: netProc
-    command: ["bash", "-c",
-      "if nmcli -t -f DEVICE,TYPE,STATE device | grep -q ':ethernet:connected'; then " +
-      "  IF=$(nmcli -t -f DEVICE,TYPE,STATE device | grep ':ethernet:connected' | head -n1 | cut -d: -f1); " +
-      "  echo \"ethernet $IF\";" +
-      "elif nmcli -t -f DEVICE,TYPE,STATE device | grep -q ':wifi:connected'; then " +
-      "  IF=$(nmcli -t -f DEVICE,TYPE,STATE device | grep ':wifi:connected' | head -n1 | cut -d: -f1); " +
-      "  echo \"wifi $IF\";" +
-      "else echo disconnected; fi"
-    ]
-    running: true
-    stdout: StdioCollector { onStreamFinished: {
-      let line = this.text.trim();
-      let parts = line.split(" ");
-      if (parts[0] === "ethernet") {
-        root.net_status = "ethernet";
-        root._readBandwidth(parts[1]);
-      } else if (parts[0] === "wifi") {
-        root.net_status = "wifi";
-        root._readBandwidth(parts[1]);
-      } else {
-        root.net_status = "disconnected";
-        root.net_up = "   0b/s";
-        root.net_down = "   0b/s";
-        root.net_up_bps = 0;
-        root.net_down_bps = 0;
-      }
-    } }
-  }
+  FileView { id: txFile; path: root.netIface ? "/sys/class/net/" + root.netIface + "/statistics/tx_bytes" : ""; blockLoading: true }
+  FileView { id: rxFile; path: root.netIface ? "/sys/class/net/" + root.netIface + "/statistics/rx_bytes" : ""; blockLoading: true }
 
-  Process {
-    id: bwProc
-    property string iface: ""
-    command: ["bash", "-c", iface
-      ? ("cat /sys/class/net/" + iface + "/statistics/tx_bytes /sys/class/net/" + iface + "/statistics/rx_bytes 2>/dev/null")
-      : "echo"]
-    stdout: StdioCollector { onStreamFinished: {
-      let lines = this.text.trim().split("\n");
-      if (lines.length < 2) return;
-      let tx = parseFloat(lines[0]);
-      let rx = parseFloat(lines[1]);
-      let now = Date.now();
-      if (root._netLastTx > 0 && root._netLastT > 0) {
-        let dt = (now - root._netLastT) / 1000.0;
-        if (dt > 0) {
-          let upBps  = Math.max(0, (tx - root._netLastTx) * 8 / dt);
-          let downBps = Math.max(0, (rx - root._netLastRx) * 8 / dt);
-          root.net_up_bps   = upBps;
-          root.net_down_bps = downBps;
-          root.net_up   = root._fmtBits(upBps);
-          root.net_down = root._fmtBits(downBps);
-        }
-      }
-      root._netLastTx = tx;
-      root._netLastRx = rx;
-      root._netLastT = now;
-    } }
-  }
-
-  function _readBandwidth(iface) {
-    // counters are per-interface, so a wifi→ethernet switch would otherwise
-    // diff two unrelated byte counts and show one bogus multi-Gb/s spike
-    if (iface !== bwProc.iface) { root._netLastTx = -1; root._netLastT = 0; }
-    bwProc.iface = iface;
-    bwProc.running = true;
+  function _sampleNet() {
+    if (!netIface) { net_up_bps = 0; net_down_bps = 0; return }
+    txFile.reload()
+    rxFile.reload()
+    let tx = parseFloat(txFile.text())
+    let rx = parseFloat(rxFile.text())
+    if (isNaN(tx) || isNaN(rx)) return
+    let now = Date.now()
+    if (_netLastT > 0 && now > _netLastT) {
+      let dt = (now - _netLastT) / 1000
+      net_up_bps = Math.max(0, (tx - _netLastTx) * 8 / dt)
+      net_down_bps = Math.max(0, (rx - _netLastRx) * 8 / dt)
+    }
+    _netLastTx = tx
+    _netLastRx = rx
+    _netLastT = now
   }
 
   function _fmtBits(b) {
@@ -215,14 +189,7 @@ Scope {
     interval: 1000
     running: true
     repeat: true
-    onTriggered: {
-      dateGet.running = true
-      cpuProc.running = true
-      gpuProc.running = true
-      tempProc.running = true
-      fanProc.running = true
-      vpnProc.running = true
-      netProc.running = true
-    }
+    triggeredOnStart: true
+    onTriggered: { root._sampleCpu(); root._sampleNet() }
   }
 }

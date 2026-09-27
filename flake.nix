@@ -2,8 +2,10 @@
   description = "My NixOS Config!";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    claude-code.url = "github:sadjow/claude-code-nix";
+    nix-graph.url = "github:AlexAntonik/nix-graph";
     #nvim = {
     #  url = "path:/home/pulsar/Neovim-Config";
     #  inputs.nixpkgs.follows = "nixpkgs";

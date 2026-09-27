@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Io
+import QtQml
 import QtQuick
 
 PopupCard {
@@ -24,33 +25,61 @@ PopupCard {
   property bool dgpuAsleep: false
   readonly property int histLen: 30   // × 2s poll = last minute
 
-  // hwmon is cheap file reads, so it polls always and the history is already
-  // there on open. nvidia-smi wakes a suspended dGPU, so it's only queried
-  // while the popup is open and the card is already awake (same gate as the
-  // bar's get_gpu_busy.sh).
+  readonly property var cpuTemp: values["k10temp:Tctl"]
+
+  // hwmon numbering isn't stable across boots, so sensor files are found once
+  // at startup; after that every poll is in-process file reads, no processes.
+  property var _sensorFiles: []   // [{ key, path }]
   Process {
-    id: sensorProc
+    running: true
     command: ["bash", "-c",
       "for h in /sys/class/hwmon/hwmon*; do n=$(cat $h/name); " +
       "for f in $h/temp*_input $h/fan*_input; do [ -e \"$f\" ] || continue; " +
-      "b=${f%_input}; l=$(cat ${b}_label 2>/dev/null); echo \"$n:${l:-${b##*/}}|$(cat $f)\"; done; done; " +
-      "s=$(cat /sys/bus/pci/devices/0000:01:00.0/power/runtime_status 2>/dev/null); echo \"nvidia:status|$s\"; " +
-      (root.open ? "[ \"$s\" = active ] && echo \"nvidia:temp|$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null)\"" : "true")]
-    stdout: StdioCollector { onStreamFinished: root._parse(this.text) }
+      "b=${f%_input}; l=$(cat ${b}_label 2>/dev/null); echo \"$n:${l:-${b##*/}}|$f\"; done; done"]
+    stdout: StdioCollector { onStreamFinished: {
+      root._sensorFiles = this.text.trim().split("\n").map(function (l) {
+        let p = l.split("|")
+        return { key: p[0], path: p[1] }
+      })
+    } }
   }
-  Timer { interval: 2000; running: true; repeat: true; triggeredOnStart: true; onTriggered: sensorProc.running = true }
+  Instantiator {
+    id: sensorFiles
+    model: root._sensorFiles
+    delegate: FileView { required property var modelData; path: modelData.path; blockLoading: true }
+  }
 
-  function _parse(text) {
+  // nvidia-smi wakes a suspended dGPU, so it's only queried while the popup is
+  // open and the card is already awake (same gate as get_gpu_busy.sh)
+  FileView { id: dgpuPm; path: "/sys/bus/pci/devices/0000:01:00.0/power/runtime_status"; blockLoading: true; printErrors: false }
+  property real _dgpuTemp: NaN
+  Process {
+    id: nvidiaProc
+    command: ["nvidia-smi", "--query-gpu=temperature.gpu", "--format=csv,noheader,nounits"]
+    stdout: StdioCollector { onStreamFinished: root._dgpuTemp = parseFloat(this.text) }
+  }
+
+  Timer { interval: 2000; running: true; repeat: true; triggeredOnStart: true; onTriggered: root._poll() }
+
+  function _poll() {
     let vals = {}
-    let lines = text.trim().split("\n")
-    for (let i = 0; i < lines.length; i++) {
-      let [k, raw] = lines[i].split("|")
-      if (k === "nvidia:status") { root.dgpuAsleep = raw === "suspended"; continue }
-      let v = parseFloat(raw)
+    for (let i = 0; i < sensorFiles.count; i++) {
+      let fv = sensorFiles.objectAt(i)
+      fv.reload()
+      let v = parseFloat(fv.text())
       if (isNaN(v)) continue
-      // hwmon temps are millidegrees; nvidia-smi and fan RPM are not
-      vals[k] = (k.indexOf("fan") >= 0 || k === "nvidia:temp") ? v : v / 1000
+      // hwmon temps are millidegrees; fan RPM is not
+      vals[fv.modelData.key] = fv.modelData.key.indexOf("fan") >= 0 ? v : v / 1000
     }
+    dgpuPm.reload()
+    dgpuAsleep = dgpuPm.text().trim() === "suspended"
+    if (open && !dgpuAsleep) {
+      nvidiaProc.running = true
+      if (!isNaN(_dgpuTemp)) vals["nvidia:temp"] = _dgpuTemp
+    } else {
+      _dgpuTemp = NaN
+    }
+
     let h = Object.assign({}, root.hist)
     for (let k in vals) h[k] = (h[k] || []).concat([vals[k]]).slice(-root.histLen)
     root.values = vals

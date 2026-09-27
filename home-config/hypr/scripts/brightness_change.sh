@@ -1,24 +1,15 @@
-declare -i scalar="$1"
+declare -i change="$1"
 
-read float < <(light -G)
-CURR=$(awk '{printf "%d", $1}' <<< "$float")
-mult=2
-cutoff=20
-echo $CURR
-if [[ $CURR -lt $cutoff ]]; then
-  change=$((scalar / mult))
-  echo $cutoff
-  echo $scalar
-  echo $change
-else 
-  change=$((scalar))
+# current brightness in percent (4th field of machine output, e.g. "95%")
+CURR=$(brightnessctl -c backlight -m | cut -d, -f4 | tr -d '%')
+
+# finer steps at low brightness
+if [[ $CURR -lt 20 ]]; then
+  change=$((change / 2))
 fi
 
-neg=-1
-zero=0
-if [[ $change -lt $zero ]]; then
-  light -U $(($neg * $change))
+if [[ $change -lt 0 ]]; then
+  brightnessctl -c backlight set "$((-change))%-"
 else
-  light -A $change
+  brightnessctl -c backlight set "${change}%+"
 fi
-

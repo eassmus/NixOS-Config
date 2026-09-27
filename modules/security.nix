@@ -2,10 +2,9 @@
 
 {
   security.polkit.enable = true;
-  security.pam.services.hyprlock = { };
+  security.pam.services.hyprlock.enableGnomeKeyring = true;
   #security.pam.services.swaylock = { };
   #security.pam.services.swaylock.fprintAuth = false;
-  security.pam.services.ly.enableGnomeKeyring = true;
 
   # lets the quickshell network popup poll per-process bandwidth without a
   # root prompt: nethogs needs raw-socket + /proc access to attribute traffic.

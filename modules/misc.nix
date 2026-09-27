@@ -6,6 +6,14 @@
     useXkbConfig = true;
   };
 
+  virtualisation.docker.enable = true;
+  users.users.pulsar = {
+    extraGroups = [ "docker" ];
+  };
+  nixpkgs.config.permittedInsecurePackages = [
+    "docker-28.5.2"
+  ];
+
   environment.shellAliases = {
     l = "eza -lah";
     ls = "eza";
@@ -20,9 +28,9 @@
     mv = "mv -i";
     cat = "bat";
 
-    realrm = "rm";
-
     rm = "trash";
+
+    realremove = "rm";
 
     nfu = "sudo nix flake update";
     nrs = "sudo nixos-rebuild switch";
@@ -32,7 +40,6 @@
     e = "nvim";
     nivm = "nvim";
     cr = "claude --resume";
-    c = "claude";
 
     g = "git";
     gs = "git status";

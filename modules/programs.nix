@@ -13,7 +13,6 @@
   };
 
   programs = {
-    adb.enable = true;
     zoxide = {
       enableBashIntegration= true;
       flags = [ "--cmd cd" ];
@@ -21,7 +20,7 @@
 
     thunar = {
       enable = true;
-      plugins = with pkgs.xfce; [
+      plugins = with pkgs; [
         thunar-archive-plugin
         thunar-volman
       ];
@@ -46,7 +45,7 @@
       stdenv.cc.cc.lib
       zlib
       libgcc
-      xorg.libX11
+      libX11
     ];
 
     gnupg = {
@@ -110,7 +109,6 @@
     zsh.enable = false;
     mtr.enable = true;
 
-    light.enable = true;
   };
 
   environment.sessionVariables = {

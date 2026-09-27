@@ -3,11 +3,20 @@
   pkgs,
   pkgs-unstable,
   lib,
+  inputs,
   ...
 }:
 {
   environment.systemPackages = with pkgs; [
     #(llama-cpp.override { cudaSupport = true; })
+    brightnessctl
+    texliveMedium
+    zotero
+    glow
+    poppler-utils
+    rustc
+    lua5_1
+    lua51Packages.luarocks
     pkgs-unstable.quickshell
     hypridle
     psmisc
@@ -15,7 +24,8 @@
     telegram-desktop
     omnisharp-roslyn
     csharp-ls
-    claude-code
+    inputs.claude-code.packages.${pkgs.system}.default
+    inputs.nix-graph.packages.${pkgs.stdenv.hostPlatform.system}.nix-graph
     mono
     unityhub
     octave
@@ -52,7 +62,7 @@
     gimp
     slack
     nodejs
-    nixfmt-rfc-style
+    nixfmt
     mpv
     bat
     hwinfo
@@ -63,7 +73,7 @@
     btop
     nvtopPackages.full
     htop
-    gcc
+    gcc13
     vscode
     cargo
     rustup
@@ -84,7 +94,6 @@
     libsForQt5.qt5.qtquickcontrols2
     libsForQt5.qt5.qtgraphicaleffects
     libsForQt5.qt5.qtsvg
-    neofetch
     tldr
     unzip
     openssl
