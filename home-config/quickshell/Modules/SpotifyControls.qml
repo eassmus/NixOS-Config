@@ -3,36 +3,12 @@ import Quickshell.Services.Mpris
 import Quickshell.Widgets
 import QtQuick
 
-PopupWindow {
+PopupCard {
   id: root
 
-  // ---- API ----
-  property var anchorItem: null
-  property bool open: false
-
-  // hover-tracking
-  property bool pillHovered: false
-  property bool popupHovered: false
-  property int closeDelay: 0
-
-  onPillHoveredChanged: _updateOpen()
-  onPopupHoveredChanged: _updateOpen()
-
-  function _updateOpen() {
-    if (pillHovered || popupHovered) {
-      closeTimer.stop()
-      open = true
-    } else {
-      closeTimer.restart()
-    }
-  }
-
-  Timer {
-    id: closeTimer
-    interval: root.closeDelay
-    repeat: false
-    onTriggered: root.open = false
-  }
+  innerPadding: 0
+  cardWidth: 500
+  cardHeight: 244
 
   // pick the spotify player if present, else first available
   property var player: {
@@ -55,62 +31,9 @@ PopupWindow {
     return false
   }
 
-  // ---- styling (matches Pill) ----
-  property color bgColor: "#161616"
-  property color gradTop: "#e9a6fd"
-  property color gradBottom: "#82aee8"
-  property color mainColor: "#82aee8"
-  property color pinkColor: "#e9a6fd"
-  property real borderWidth: 6
-  property real radius: 20
-  property string fontFamily: "JetBrainsMono Nerd Font"
-
-  // gap between bar bottom and the visible popup top — surface extends across
-  // this so the cursor stays inside the popup window while traveling down
-  property int bridgeHeight: 20
-
-  color: "transparent"
-  implicitWidth: 500
-  implicitHeight: 244 + bridgeHeight
-  visible: open
-
-  anchor {
-    item: anchorItem
-    edges: Edges.Bottom
-    gravity: Edges.Bottom
-    margins.top: 0
-  }
-
-  // whole-surface hover bridge (covers invisible top region + visible card)
-  HoverHandler {
-    onHoveredChanged: root.popupHovered = hovered
-  }
-
-  // gradient border + bg
-  Rectangle {
-    id: outer
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    anchors.top: parent.top
-    anchors.topMargin: root.bridgeHeight
-    radius: root.radius
-    gradient: Gradient {
-      GradientStop { position: 0.0; color: root.gradTop }
-      GradientStop { position: 1.0; color: root.gradBottom }
-    }
-  }
-  Rectangle {
-    id: bg
-    anchors.fill: outer
-    anchors.margins: root.borderWidth
-    color: root.bgColor
-    radius: Math.max(0, root.radius - root.borderWidth)
-  }
-
   // scroll anywhere on the card to seek (5s per notch)
   MouseArea {
-    anchors.fill: bg
+    anchors.fill: parent
     acceptedButtons: Qt.NoButton // let clicks pass through to inner controls
     propagateComposedEvents: true
     onWheel: function(wheel) {
@@ -125,7 +48,7 @@ PopupWindow {
   }
 
   Item {
-    anchors.fill: bg
+    anchors.fill: parent
     anchors.topMargin: 16
     anchors.leftMargin: 16
     anchors.rightMargin: 16

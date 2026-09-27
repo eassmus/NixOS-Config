@@ -82,11 +82,15 @@ Scope {
 
   // ---------- Fan / Power profile ----------
   property string fan_mode: ""
+  readonly property var _fanIcons: ({ "Quiet": "󰾆", "Balanced": "󰾅", "Performance": "󰓅" })
   Process {
     id: fanProc
-    command: ["bash", "-c", "asusctl profile --profile-get | tail -n 3 | head -n 1 | cut -c 19-19 | /home/pulsar/.config/waybar/scripts/fan-speed.sh"]
+    command: ["bash", "-c", "asusctl profile get 2>/dev/null | grep -oP 'Active profile:?\\s*(is\\s+)?\\K\\w+'"]
     running: true
-    stdout: StdioCollector { onStreamFinished: root.fan_mode = this.text.trim() }
+    stdout: StdioCollector { onStreamFinished: {
+      let p = this.text.trim()
+      root.fan_mode = root._fanIcons[p] || p
+    } }
   }
 
   // ---------- VPN ----------

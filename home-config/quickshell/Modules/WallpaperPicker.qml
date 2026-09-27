@@ -3,24 +3,12 @@ import Quickshell.Io
 import Quickshell.Widgets
 import QtQuick
 
-PopupWindow {
+PopupCard {
   id: root
 
-  // ---- API ----
-  property var anchorItem: null
-  property bool open: false
-
-  // ---- styling (matches other popups) ----
-  property color bgColor: "#161616"
-  property color gradTop: "#e9a6fd"
-  property color gradBottom: "#82aee8"
-  property color mainColor: "#82aee8"
-  property color pinkColor: "#e9a6fd"
-  property color dimColor: "#666666"
-  property real borderWidth: 6
-  property real radius: 20
-  property string fontFamily: "JetBrainsMono Nerd Font"
-  property int bridgeHeight: 20
+  // opened/closed by the wallpaper button, not by hover
+  hoverDriven: false
+  innerPadding: 20
 
   // ---- wallpaper state ----
   property string wallpaperRoot: "/home/pulsar/Wallpapers"
@@ -108,55 +96,28 @@ PopupWindow {
   onCurrentFolderChanged: _loadImages()
 
   // ---- layout ----
-  property int innerPadding: 20
   property int contentWidth: 940
   property int contentHeight: 560
   property int thumbW: 220
   property int thumbH: 130
   property int gridGap: 20
 
-  color: "transparent"
-  implicitWidth: contentWidth + innerPadding * 2 + borderWidth * 2
-  implicitHeight: bridgeHeight + contentHeight + innerPadding * 2 + borderWidth * 2
-  visible: open
+  cardWidth: contentWidth + chrome
+  cardHeight: contentHeight + chrome
 
-  // Left-align the popup with the anchor item (battery pill). The popup is
-  // centered on the rect's bottom edge, so a rect that spans from the anchor's
-  // left edge to anchor.left + root.width puts the popup's left edge flush
-  // with the anchor's left.
+  // Left-align the popup with the anchor item. The popup is centered on the
+  // rect's bottom edge, so a rect that spans from the anchor's left edge to
+  // anchor.left + root.width puts the popup's left edge flush with it.
   anchor {
-    item: anchorItem
     rect.x: 0
     rect.y: 0
     rect.width: root.width
     rect.height: anchorItem ? anchorItem.height : 0
-    edges: Edges.Bottom
-    gravity: Edges.Bottom
-    margins.top: 0
-  }
-
-  Rectangle {
-    id: outer
-    anchors.fill: parent
-    anchors.topMargin: root.bridgeHeight
-    radius: root.radius
-    gradient: Gradient {
-      GradientStop { position: 0.0; color: root.gradTop }
-      GradientStop { position: 1.0; color: root.gradBottom }
-    }
-  }
-  Rectangle {
-    id: bg
-    anchors.fill: outer
-    anchors.margins: root.borderWidth
-    color: root.bgColor
-    radius: Math.max(0, root.radius - root.borderWidth)
   }
 
   Item {
     id: content
-    anchors.fill: bg
-    anchors.margins: root.innerPadding
+    anchors.fill: parent
     clip: true
 
     // close button (top-right)

@@ -88,7 +88,6 @@ Scope {
 
             text: {
               let s = vars.bat_state
-              if (vars.bat_onac) return "󰚥"
               if (s === "Full") return "󰚥"
               if (s === "Empty") return "Goodbye"
               if (s === "Unknown") return "Unknown"
@@ -240,13 +239,18 @@ Scope {
 
             contentWidth: wsCount * dotSize + (wsCount - 1) * dotSpacing
 
+            // Hyprland 0.55+ evaluates dispatch strings as Lua
+            function focusWs(ws) {
+              Hyprland.dispatch('hl.dsp.focus({ workspace = "' + ws + '" })')
+            }
+
             // dots, centered; scroll up = +1 ws, scroll down = -1 ws
             MouseArea {
               anchors.fill: parent
               acceptedButtons: Qt.NoButton
               onWheel: function(wheel) {
-                if (wheel.angleDelta.y > 0) Hyprland.dispatch("workspace +1")
-                else if (wheel.angleDelta.y < 0) Hyprland.dispatch("workspace -1")
+                if (wheel.angleDelta.y > 0) workspacePill.focusWs("+1")
+                else if (wheel.angleDelta.y < 0) workspacePill.focusWs("-1")
               }
             }
 
@@ -278,7 +282,7 @@ Scope {
                     MouseArea {
                       anchors.fill: parent
                       cursorShape: Qt.PointingHandCursor
-                      onClicked: Hyprland.dispatch("workspace " + wsItem.wsId)
+                      onClicked: workspacePill.focusWs(wsItem.wsId)
                     }
                   }
                 }
@@ -342,6 +346,12 @@ Scope {
           anchorItem: cpuPill
         }
 
+        // shared by the temp and fan pills
+        ThermalPopup {
+          anchorItem: tempPill
+          pillHovered: tempHover.hovered || fanHover.hovered
+        }
+
         WallpaperPicker {
           id: wallpaperPicker
           anchorItem: workspacePill
@@ -355,71 +365,24 @@ Scope {
         // Hover-revealed button under the workspaces pill that opens the wallpaper picker.
         // Sized + styled to match the other hover popups: gradient border, 42px
         // inner height, 20px bridge, default centered placement under the pill.
-        PopupWindow {
+        PopupCard {
           id: wallpaperButton
+          anchorItem: workspacePill
+          closeDelay: 250
+          innerPadding: 0
+          cardWidth: iconLabel.implicitWidth + 18 * 2 + borderWidth * 2
+          cardHeight: 42 + borderWidth * 2
 
-          property bool pillHovered: false
-          property bool buttonHovered: false
-          property bool isOpen: false
-          property int closeDelay: 250
-
-          onPillHoveredChanged: _u()
-          onButtonHoveredChanged: _u()
-          function _u() {
-            if (pillHovered || buttonHovered) { btnTimer.stop(); isOpen = true }
-            else btnTimer.restart()
-          }
-          Timer {
-            id: btnTimer
-            interval: wallpaperButton.closeDelay
-            repeat: false
-            onTriggered: wallpaperButton.isOpen = false
-          }
-
-          property color bgColor: vars.bgColor
-          property color gradTop: vars.pinkColor
-          property color gradBottom: vars.mainColor
-          property real borderWidth: 6
-          property real radius: 20
-          property int bridgeHeight: 20
-          property int innerH: 42
-          property real hPad: 18
-
-          color: "transparent"
-          implicitWidth: iconLabel.implicitWidth + hPad * 2 + borderWidth * 2
-          implicitHeight: bridgeHeight + innerH + borderWidth * 2
-          visible: isOpen
-
-          // Anchored under the workspaces pill, left-aligned with its left edge.
+          // left-aligned with the workspaces pill's left edge
           anchor {
-            item: workspacePill
             rect.x: 0
             rect.y: 0
             rect.width: wallpaperButton.width
             rect.height: workspacePill.height
-            edges: Edges.Bottom
-            gravity: Edges.Bottom
-            margins.top: 0
           }
 
-          HoverHandler { onHoveredChanged: wallpaperButton.buttonHovered = hovered }
-
-          Rectangle {
-            id: btnOuter
+          Item {
             anchors.fill: parent
-            anchors.topMargin: wallpaperButton.bridgeHeight
-            radius: wallpaperButton.radius
-            gradient: Gradient {
-              GradientStop { position: 0.0; color: wallpaperButton.gradTop }
-              GradientStop { position: 1.0; color: wallpaperButton.gradBottom }
-            }
-          }
-          Rectangle {
-            id: btnBg
-            anchors.fill: btnOuter
-            anchors.margins: wallpaperButton.borderWidth
-            color: wallpaperButton.bgColor
-            radius: Math.max(0, wallpaperButton.radius - wallpaperButton.borderWidth)
 
             Text {
               id: iconLabel
@@ -557,17 +520,20 @@ Scope {
               }
             }
             Pill {
+              id: tempPill
+              HoverHandler { id: tempHover }
               roundLeft: false; roundRight: false
               text: " " + vars.temp
               textColor: vars.mainColor
               onClicked: kittyBtop.running = true
             }
             Pill {
+              HoverHandler { id: fanHover }
               roundLeft: false; roundRight: true
               text: vars.fan_mode + " "
               textColor: vars.mainColor
-              onClicked: { fanCycle.command = ["asusctl","profile","--next"]; fanCycle.running = true }
-              onRightClicked: { fanCycle.command = ["bash","-c","asusctl profile --next && asusctl profile --next"]; fanCycle.running = true }
+              onClicked: { fanCycle.command = ["asusctl","profile","next"]; fanCycle.running = true }
+              onRightClicked: { fanCycle.command = ["bash","-c","asusctl profile next && asusctl profile next"]; fanCycle.running = true }
             }
           }
 

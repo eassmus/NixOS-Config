@@ -2,37 +2,8 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-PopupWindow {
+PopupCard {
   id: root
-
-  // ---- API ----
-  property var anchorItem: null
-  property bool open: false
-  property bool pillHovered: false
-  property bool popupHovered: false
-  property int closeDelay: 0
-
-  onPillHoveredChanged: _updateOpen()
-  onPopupHoveredChanged: _updateOpen()
-  function _updateOpen() {
-    if (pillHovered || popupHovered) { closeTimer.stop(); open = true }
-    else closeTimer.restart()
-  }
-  Timer { id: closeTimer; interval: root.closeDelay; repeat: false; onTriggered: root.open = false }
-
-  // ---- styling (matches other popups) ----
-  property color bgColor: "#161616"
-  property color gradTop: "#e9a6fd"
-  property color gradBottom: "#82aee8"
-  property color mainColor: "#82aee8"
-  property color pinkColor: "#e9a6fd"
-  property color greenColor: "#a6e3a1"
-  property color warningColor: "#f3a611"
-  property color dimColor: "#666666"
-  property real borderWidth: 6
-  property real radius: 20
-  property string fontFamily: "JetBrainsMono Nerd Font"
-  property int bridgeHeight: 20
 
   // ---- nvidia-smi state ----
   property var stats: null     // { name, temp, gpuUtil, memUtil, memUsed, memTotal, power, powerLimit, fan, clkGfx, clkMem }
@@ -180,70 +151,20 @@ PopupWindow {
   }
 
   // ---- layout ----
-  property int innerPadding: 16
   property int contentWidth: 560
   property int rowH: 30
   property int utilColW: 80
   property int memColW: 120
   property int colGap: 12
 
-  // Fixed window at the tallest the card can get; only the drawn card is
-  // sized to content. Resizing a mapped popup remaps the surface and blinks.
-  readonly property int cardChrome: innerPadding * 2 + borderWidth * 2
-  readonly property int maxCardHeight: cardChrome
+  cardWidth: contentWidth + chrome
+  cardHeight: content.implicitHeight + chrome
+  maxCardHeight: chrome
     + 5 * rowH + 6 + 2 + 4 + rowH + maxProcs * rowH
     + content.spacing * (8 + maxProcs)
 
-  color: "transparent"
-  implicitWidth: contentWidth + cardChrome
-  implicitHeight: bridgeHeight + maxCardHeight
-  visible: open
-  mask: Region { item: cardArea }
-
-  anchor {
-    item: anchorItem
-    edges: Edges.Bottom
-    gravity: Edges.Bottom
-    margins.top: 0
-  }
-
-  // hover + input region: bridge gap plus the visible card only
-  Item {
-    id: cardArea
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.top: parent.top
-    height: root.bridgeHeight + outer.height
-    HoverHandler { onHoveredChanged: root.popupHovered = hovered }
-  }
-
-  // gradient border + bg, offset down by bridgeHeight, sized to content
-  Rectangle {
-    id: outer
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.top: parent.top
-    anchors.topMargin: root.bridgeHeight
-    height: content.implicitHeight + root.cardChrome
-    radius: root.radius
-    gradient: Gradient {
-      GradientStop { position: 0.0; color: root.gradTop }
-      GradientStop { position: 1.0; color: root.gradBottom }
-    }
-  }
-  Rectangle {
-    id: bg
-    anchors.fill: outer
-    anchors.margins: root.borderWidth
-    color: root.bgColor
-    radius: Math.max(0, root.radius - root.borderWidth)
-  }
-
   Column {
     id: content
-    anchors.left: bg.left
-    anchors.top: bg.top
-    anchors.margins: root.innerPadding
     width: root.contentWidth
     spacing: 6
 

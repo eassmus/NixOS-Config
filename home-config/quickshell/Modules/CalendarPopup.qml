@@ -1,54 +1,16 @@
 import Quickshell
 import QtQuick
 
-PopupWindow {
+PopupCard {
   id: root
 
-  // ---- API ----
-  property var anchorItem: null
-  property bool open: false
-  property bool pillHovered: false
-  property bool popupHovered: false
-  // tiny grace period so the transition pill → bridge doesn't race the popup closed
-  property int closeDelay: 0
-
-  onPillHoveredChanged: _updateOpen()
-  onPopupHoveredChanged: _updateOpen()
-  function _updateOpen() {
-    if (pillHovered || popupHovered) {
-      closeTimer.stop()
-      open = true
-    } else {
-      closeTimer.restart()
-    }
-  }
-
-  Timer {
-    id: closeTimer
-    interval: root.closeDelay
-    repeat: false
-    onTriggered: root.open = false
-  }
-
-  // ---- styling (matches Pill / SpotifyControls) ----
-  property color bgColor: "#161616"
-  property color gradTop: "#e9a6fd"
-  property color gradBottom: "#82aee8"
-  property color mainColor: "#82aee8"
-  property color pinkColor: "#e9a6fd"
-  property color dimColor: "#3a3a3a"
-  property real borderWidth: 6
-  property real radius: 20
-  property string fontFamily: "JetBrainsMono Nerd Font"
-
-  // invisible hover-bridge between anchor and visible card
-  property int bridgeHeight: 20
+  dimColor: "#3a3a3a"
+  innerPadding: 14
 
   // ---- layout ----
   property int cellSize: 46
   property int gridCols: 7
   property int gridRows: 6
-  property int innerPadding: 14
   property int headerH: 36
   property int weekdayH: 26
 
@@ -80,47 +42,11 @@ PopupWindow {
   }
   onOpenChanged: if (open) _resetToToday()
 
-  color: "transparent"
-  implicitWidth: cellSize * gridCols + innerPadding * 2 + borderWidth * 2
-  implicitHeight: bridgeHeight + headerH + weekdayH + cellSize * gridRows + innerPadding * 2 + borderWidth * 2
-  visible: open
-
-  anchor {
-    item: anchorItem
-    edges: Edges.Bottom
-    gravity: Edges.Bottom
-    margins.top: 0
-  }
-
-  HoverHandler {
-    onHoveredChanged: root.popupHovered = hovered
-  }
-
-  // gradient border + bg, offset down by bridgeHeight so the gap stays empty
-  Rectangle {
-    id: outer
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    anchors.top: parent.top
-    anchors.topMargin: root.bridgeHeight
-    radius: root.radius
-    gradient: Gradient {
-      GradientStop { position: 0.0; color: root.gradTop }
-      GradientStop { position: 1.0; color: root.gradBottom }
-    }
-  }
-  Rectangle {
-    id: bg
-    anchors.fill: outer
-    anchors.margins: root.borderWidth
-    color: root.bgColor
-    radius: Math.max(0, root.radius - root.borderWidth)
-  }
+  cardWidth: cellSize * gridCols + chrome
+  cardHeight: headerH + weekdayH + cellSize * gridRows + chrome
 
   Item {
-    anchors.fill: bg
-    anchors.margins: root.innerPadding
+    anchors.fill: parent
 
     // header: < Month Year >
     Item {
