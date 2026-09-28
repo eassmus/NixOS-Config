@@ -14,6 +14,9 @@ hyprpaper_config_file="$HOME/.config/hypr/hyprpaper.conf"
 # Persist the new wallpaper so it survives a hyprpaper restart / re-login.
 sed -i "s|^\(\s*path = \).*$|\1$1|" "$hyprpaper_config_file"
 
+# hyprlock's background points at this link
+ln -sf "$1" "$HOME/.cache/current_wallpaper"
+
 # Live, seamless swap via hyprctl — no killall, no blink.
 hyprctl hyprpaper wallpaper ",$1" >/dev/null
 

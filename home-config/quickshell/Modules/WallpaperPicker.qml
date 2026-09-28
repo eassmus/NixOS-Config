@@ -56,7 +56,7 @@ PopupCard {
   Process {
     id: readCurrentProc
     command: ["bash", "-c",
-      "grep '^wallpaper' '" + root.hyprpaperConf + "' | head -1 | sed -E 's/^wallpaper = ,?//'"]
+      "sed -n 's/^\\s*path = //p' '" + root.hyprpaperConf + "' | head -1"]
     stdout: StdioCollector { onStreamFinished: {
       root.currentWallpaper = this.text.trim()
     } }
