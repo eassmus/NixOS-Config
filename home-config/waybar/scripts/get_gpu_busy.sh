@@ -3,7 +3,7 @@
 PCI_ID="0000:01:00.0"
 STATUS_FILE="/sys/bus/pci/devices/$PCI_ID/power/runtime_status"
 TMP_TS="/tmp/nvidia_suspend_ts"
-THRESHOLD=1 # 5MB threshold
+THRESHOLD=5 # MiB; idle dGPU sits at ~2
 
 # 1. THE PASSIVE GATE
 # We check the kernel first. If it's already asleep, DO NOT touch nvidia-smi.

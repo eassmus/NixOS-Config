@@ -81,6 +81,7 @@
     vim
     neovide
     neovim
+    fastfetch
     dotnetCorePackages.sdk_11_0-bin
     fzf
     git

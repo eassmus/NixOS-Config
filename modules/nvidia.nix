@@ -16,6 +16,16 @@ let
     export __EGL_VENDOR_LIBRARY_FILENAMES="/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json"
     exec -a "$0" "$@"
   '';
+
+  # dGPU forced on while on AC so a monitor plugged into its DP port gets
+  # detected; on battery it's allowed to runtime-suspend.
+  # udev's RUN has no PATH, so bash builtins only.
+  nvidia-ac-power = pkgs.writeShellScript "nvidia-ac-power" ''
+    gpu=/sys/bus/pci/devices/0000:01:00.0/power/control
+    [ -e "$gpu" ] || exit 0
+    read -r ac < /sys/class/power_supply/AC0/online
+    if [ "$ac" = 1 ]; then echo on; else echo auto; fi > "$gpu"
+  '';
 in
 {
   # Enable OpenGL
@@ -33,21 +43,21 @@ in
 
   services.udev.extraRules = ''
     # Use add|bind to ensure the rule hits regardless of module load timing
-    ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}="0x030000", ATTR{power/control}="auto", ATTR{power/autosuspend_delay_ms}="100"
-    ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}="0x030200", ATTR{power/control}="auto", ATTR{power/autosuspend_delay_ms}="100"
+    ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{power/control}="auto", ATTR{power/autosuspend_delay_ms}="100"
+
+    # AC-dependent dGPU power; both events re-check AC, so boot order doesn't matter
+    ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", RUN+="${nvidia-ac-power}"
+    ACTION=="add|change", SUBSYSTEM=="power_supply", KERNEL=="AC0", RUN+="${nvidia-ac-power}"
+
+    # stable paths for AQ_DRM_DEVICES in hypr/env.lua (cardN numbering changes between boots)
+    KERNEL=="card*", KERNELS=="0000:04:00.0", SUBSYSTEM=="drm", SUBSYSTEMS=="pci", SYMLINK+="dri/amd-igpu"
+    KERNEL=="card*", KERNELS=="0000:01:00.0", SUBSYSTEM=="drm", SUBSYSTEMS=="pci", SYMLINK+="dri/nvidia-dgpu"
   '';
 
   environment.sessionVariables = {
-    # Force iGPU (card1) as primary, dGPU (card0) as secondary
-    AQ_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card2";
-    WLR_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card2";
-    
     # Force the EGL loader to use Mesa (iGPU) for the desktop compositor
     #__EGL_VENDOR_LIBRARY_FILENAMES = "/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json";
     __GLX_VENDOR_LIBRARY_NAME = "mesa"; # Default to Mesa for GL apps
-    
-    # Prevent applications from choosing NVIDIA by default
-    __NV_PRIME_RENDER_OFFLOAD = "1";
   };
 
   hardware.nvidia = {

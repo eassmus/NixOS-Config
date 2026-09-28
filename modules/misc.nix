@@ -38,7 +38,7 @@
     ns = "nix-shell";
 
     e = "nvim";
-    nivm = "nvim";
+    nivm = "nvim"; # lol.
     cr = "claude --resume";
 
     g = "git";
@@ -49,5 +49,7 @@
     gpd = "git pull";
     
     sl = "eza";
+
+    neofetch = "fastfetch";
   };
 }
