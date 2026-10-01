@@ -5,21 +5,24 @@ import QtQuick
 PopupCard {
   id: root
 
+  // per-core load and its history come from Vars, which samples /proc/stat
+  // every second for the bar pill anyway, so the graphs are already full
+  // when the popup opens
+  property var sharedVars: null
+  readonly property var cores: sharedVars ? sharedVars.cpu_cores : []
+
   // ---- state ----
-  property var _prevCpu: ({})   // core name -> { total, idle } from previous sample
-  property var cores: []        // [ { core, util } ] in cpu0..cpuN order
-  property int totalUtil: 0     // overall utilization (aggregate "cpu" line)
   property real tempC: 0
   property real memUsed: 0      // GiB
   property real memTotal: 0     // GiB
   property var procs: []        // [ { name, cpu, memMiB } ] sorted desc by cpu
   property int maxProcs: 6
 
-  // one poll = /proc/stat (per-core), /proc/meminfo, and k10temp Tctl
+  // one poll = /proc/meminfo and k10temp Tctl
   Process {
     id: cpuProc
     command: ["bash", "-c",
-      "cat /proc/stat; echo MEM; cat /proc/meminfo; echo TEMP; " +
+      "cat /proc/meminfo; echo TEMP; " +
       "for h in /sys/class/hwmon/hwmon*; do " +
       "[ \"$(cat \"$h/name\" 2>/dev/null)\" = k10temp ] && { cat \"$h/temp1_input\" 2>/dev/null; break; }; done"]
     stdout: StdioCollector { onStreamFinished: root._parse(this.text) }
@@ -27,44 +30,17 @@ PopupCard {
 
   function _parse(text) {
     let lines = text.split("\n")
-    let section = "STAT"
-    let prev = root._prevCpu
-    let next = {}
-    let cores = []
-    let totalUtil = 0
+    let inTemp = false
     let memTotalKb = 0, memAvailKb = 0
     for (let i = 0; i < lines.length; i++) {
       let l = lines[i].trim()
-      if (l === "MEM") { section = "MEM"; continue }
-      if (l === "TEMP") { section = "TEMP"; continue }
-      if (section === "STAT") {
-        let p = l.split(/\s+/)
-        let name = p[0]
-        // aggregate "cpu" line → overall; "cpuN" lines → per core
-        if (name !== "cpu" && !/^cpu\d+$/.test(name)) continue
-        let nums = p.slice(1).map(Number)
-        let total = 0; for (let k = 0; k < nums.length; k++) total += nums[k]
-        let idle = (nums[3] || 0) + (nums[4] || 0)   // idle + iowait
-        next[name] = { total: total, idle: idle }
-        let util = 0
-        if (prev[name]) {
-          let dt = total - prev[name].total
-          let di = idle - prev[name].idle
-          if (dt > 0) util = Math.max(0, Math.min(100, Math.round(100 * (dt - di) / dt)))
-        }
-        if (name === "cpu") totalUtil = util
-        else cores.push({ core: name.replace("cpu", ""), util: util })
-      } else if (section === "MEM") {
-        if (l.indexOf("MemTotal") === 0) memTotalKb = parseInt(l.split(/\s+/)[1])
-        else if (l.indexOf("MemAvailable") === 0) memAvailKb = parseInt(l.split(/\s+/)[1])
-      } else if (section === "TEMP") {
+      if (l === "TEMP") { inTemp = true; continue }
+      if (inTemp) {
         let v = parseInt(l)
         if (!isNaN(v)) root.tempC = v / 1000
-      }
+      } else if (l.indexOf("MemTotal") === 0) memTotalKb = parseInt(l.split(/\s+/)[1])
+      else if (l.indexOf("MemAvailable") === 0) memAvailKb = parseInt(l.split(/\s+/)[1])
     }
-    root._prevCpu = next
-    root.cores = cores
-    root.totalUtil = totalUtil
     if (memTotalKb > 0) {
       root.memTotal = memTotalKb / 1048576
       root.memUsed = (memTotalKb - memAvailKb) / 1048576
@@ -106,11 +82,7 @@ PopupCard {
   }
 
   function _refresh() { cpuProc.running = true; psProc.running = true }
-  // sample once at startup so the core list (and thus the card height) is
-  // known before the popup is ever opened
-  Component.onCompleted: cpuProc.running = true
-  // reset the delta baseline each time we open so the first reading is honest
-  onOpenChanged: if (open) { _prevCpu = ({}); _refresh() }
+  onOpenChanged: if (open) _refresh()
   Timer {
     interval: 1000
     running: root.open
@@ -126,17 +98,20 @@ PopupCard {
   // ---- layout ----
   property int contentWidth: 560
   property int rowH: 30
-  property int coreRowH: 28
-  property int coreColGap: 24
+  property int coreCols: 4
+  property int coreTileH: 84
+  property int tileGap: 8
   property int cpuColW: 80
   property int memColW: 110
   property int colGap: 12
+
+  readonly property int coreRows: Math.ceil(cores.length / coreCols)
 
   cardWidth: contentWidth + chrome
   cardHeight: content.implicitHeight + chrome
   maxCardHeight: chrome
     + 3 * rowH + 6 + 2 + 4
-    + Math.ceil(cores.length / 2) * coreRowH + 6 + 2 + 4
+    + coreRows * coreTileH + Math.max(0, coreRows - 1) * tileGap + 6 + 2 + 4
     + rowH + maxProcs * rowH
     + content.spacing * (10 + maxProcs)
 
@@ -173,7 +148,7 @@ PopupCard {
       }
     }
 
-    StatRow { k: "Utilization"; v: root.totalUtil + " %" }
+    StatRow { k: "Utilization"; v: root.sharedVars ? root.sharedVars.cpu_total + " %" : "--" }
     StatRow { k: "Temperature"; v: root.tempC > 0 ? Math.round(root.tempC) + " °C" : "--" }
     StatRow {
       k: "RAM"
@@ -193,38 +168,29 @@ PopupCard {
 
     Item { width: 1; height: 4 }
 
-    // ---- cores, two columns ----
+    // ---- per-core load, last minute ----
     Grid {
-      columns: 2
-      columnSpacing: root.coreColGap
-      rowSpacing: 0
-      // count-driven model so the per-second array replacement only updates
-      // text instead of rebuilding every core row
+      columns: root.coreCols
+      spacing: root.tileGap
+      // count-driven model so the per-second array replacement only
+      // repaints tiles instead of rebuilding them
       Repeater {
         model: root.cores.length
-        delegate: Item {
+        delegate: GraphTile {
           required property int index
-          property var c: root.cores[index]
-          width: (content.width - root.coreColGap) / 2
-          height: root.coreRowH
-          Text {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            text: c ? "C" + c.core : ""
-            color: root.mainColor
-            font.family: root.fontFamily
-            font.pixelSize: 22
-            font.bold: true
-          }
-          Text {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            text: c ? c.util + "%" : ""
-            color: root.pinkColor
-            font.family: root.fontFamily
-            font.pixelSize: 22
-            font.bold: true
-          }
+          readonly property int util: root.cores[index] || 0
+          theme: root
+          width: (content.width - (root.coreCols - 1) * root.tileGap) / root.coreCols
+          height: root.coreTileH
+          pad: 8
+          name: "C" + index
+          valueText: util + "%"
+          valueColor: root._utilColor(util)
+          points: root.sharedVars.cpu_core_hist[index] || []
+          historyLength: root.sharedVars.cpuHistLen
+          rangeMin: 0
+          rangeMax: 100
+          gridStep: 25
         }
       }
     }

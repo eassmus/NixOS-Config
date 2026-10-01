@@ -48,20 +48,38 @@ Scope {
     return hours + ":" + paddedMinutes;
   }
 
-  // ---------- CPU usage (/proc/stat delta, "idle" = idle + iowait) ----------
+  // ---------- CPU usage (/proc/stat deltas, "idle" = idle + iowait) ----------
+  // overall for the bar pill, plus per-core load and a minute of per-core
+  // history for the CPU popup's graphs
   property string cpu_usage: "--"
-  property var _cpuLast: null
+  property int cpu_total: 0
+  property var cpu_cores: []       // load % per core, cpu0..cpuN
+  property var cpu_core_hist: []   // per core, last cpuHistLen samples
+  readonly property int cpuHistLen: 60   // 1s samples → last minute
+  property var _cpuLast: ({})
   FileView { id: procStat; path: "/proc/stat"; blockLoading: true }
   function _sampleCpu() {
     procStat.reload()
-    let f = procStat.text().split("\n")[0].trim().split(/\s+/).slice(1, 8).map(Number)
-    let idle = f[3] + f[4]
-    let total = f.reduce((a, b) => a + b, 0)
-    if (_cpuLast && total > _cpuLast.total) {
-      let u = 1 - (idle - _cpuLast.idle) / (total - _cpuLast.total)
-      cpu_usage = String(Math.round(100 * u)).padStart(2, " ")
+    let lines = procStat.text().split("\n")
+    let first = !_cpuLast.cpu
+    let next = {}, utils = []
+    // the aggregate "cpu" line comes first, then cpu0..cpuN
+    for (let i = 0; i < lines.length && lines[i].startsWith("cpu"); i++) {
+      let p = lines[i].trim().split(/\s+/)
+      let f = p.slice(1, 8).map(Number)
+      let cur = { idle: f[3] + f[4], total: f.reduce((a, b) => a + b, 0) }
+      let prev = _cpuLast[p[0]]
+      next[p[0]] = cur
+      utils.push(!first && prev && cur.total > prev.total
+        ? Math.max(0, Math.round(100 * (1 - (cur.idle - prev.idle) / (cur.total - prev.total))))
+        : 0)
     }
-    _cpuLast = { total: total, idle: idle }
+    _cpuLast = next
+    cpu_cores = utils.slice(1)
+    if (first) return
+    cpu_total = utils[0]
+    cpu_usage = String(utils[0]).padStart(2, " ")
+    cpu_core_hist = cpu_cores.map((u, i) => (cpu_core_hist[i] || []).concat([u]).slice(-cpuHistLen))
   }
 
   // ---------- GPU usage ----------
@@ -72,9 +90,33 @@ Scope {
     id: gpuProc
     command: ["bash", "/home/pulsar/.config/waybar/scripts/get_gpu_busy.sh"]
     running: true
-    stdout: StdioCollector { onStreamFinished: root.gpu_usage = this.text.trim() }
+    stdout: StdioCollector { onStreamFinished: {
+      let l = this.text.trim().split("\n")
+      root.gpu_usage = l[0]
+      // keeps the last reading between queries so the thermal graph fills in the
+      // background without extra nvidia-smi calls
+      if (l[1] === "off") root.gpu_temp = NaN
+      else if (l[1]) root.gpu_temp = parseFloat(l[1])
+    } }
   }
-  Timer { interval: 2000; running: true; repeat: true; onTriggered: gpuProc.running = true }
+  property real gpu_temp: NaN
+  Timer { interval: 2000; running: true; repeat: true; onTriggered: { gpuProc.running = true; gpuControlFile.reload() } }
+
+  // pin the dGPU awake (DP-1 monitor hotplug, CUDA) or let it runtime-suspend;
+  // power/control is group-writable via a udev rule in modules/nvidia.nix
+  property bool gpu_pinned: false
+  FileView {
+    id: gpuControlFile
+    path: "/sys/bus/pci/devices/0000:01:00.0/power/control"
+    blockLoading: true
+    onLoaded: root.gpu_pinned = text().trim() === "on"
+  }
+  Process {
+    id: gpuToggleProc
+    command: ["bash", "-c", "f=/sys/bus/pci/devices/0000:01:00.0/power/control; if [ \"$(<$f)\" = on ]; then echo auto; else echo on; fi > $f"]
+    onExited: { gpuProc.running = true; gpuControlFile.reload() }
+  }
+  function toggleGpu() { gpuToggleProc.running = true }
 
   // ---------- Fan / Power profile ----------
   // changes on click (refreshFan) or via Fn+F5, hence the slow poll

@@ -97,7 +97,7 @@ Scope {
             textColor: {
               if (vars.bat_state === "Charging" || vars.bat_state === "PendingCharge") return vars.greenColor
               if (vars.bat_percent <= 10) return vars.redColor
-              if (vars.bat_percent <= 30) return vars.warningColor
+              if (vars.bat_percent <= 20) return vars.warningColor
               return vars.greenColor
             }
             onClicked: batLogout.running = true
@@ -318,11 +318,14 @@ Scope {
         GpuPopup {
           id: gpuPopup
           anchorItem: gpuPill
+          gpuPinned: vars.gpu_pinned
+          onTogglePin: vars.toggleGpu()
         }
 
         CpuPopup {
           id: cpuPopup
           anchorItem: cpuPill
+          sharedVars: vars
         }
 
         // shared by the temp and fan pills
@@ -330,11 +333,21 @@ Scope {
           id: thermalPopup
           anchorItem: tempPill
           pillHovered: tempHover.hovered || fanHover.hovered
+          dgpuTemp: vars.gpu_temp
         }
 
         WallpaperPicker {
           id: wallpaperPicker
           anchorItem: workspacePill
+        }
+
+        // Gives the picker keyboard focus so Escape closes it. The grab ends on
+        // any click outside these windows, which closes the picker too; the
+        // button is included so clicking it still toggles instead.
+        HyprlandFocusGrab {
+          windows: [wallpaperPicker, wallpaperButton]
+          active: wallpaperPicker.open
+          onCleared: wallpaperPicker.open = false
         }
 
         BatteryPopup {
@@ -493,7 +506,18 @@ Scope {
               roundLeft: false; roundRight: false
               text: vars.gpu_usage
               textColor: vars.mainColor
+              // sized to the widest state so the pill never resizes as the text changes
+              contentWidth: Math.ceil(gpuWidest.advanceWidth)
+              centerText: true
+              TextMetrics {
+                id: gpuWidest
+                text: "󰢮 󰒲 99%"
+                font.family: gpuPill.fontFamily
+                font.pixelSize: gpuPill.fontPx
+                font.bold: true
+              }
               onClicked: kittyNvtop.running = true
+              onRightClicked: vars.toggleGpu()
 
               HoverHandler {
                 onHoveredChanged: gpuPopup.pillHovered = hovered

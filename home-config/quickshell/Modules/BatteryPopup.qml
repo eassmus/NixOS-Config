@@ -29,8 +29,6 @@ PopupCard {
   function _rateColor() {
     if (full) return dimColor
     if (charging) return greenColor
-    if (rateW > 30) return redColor
-    if (rateW > 15) return warningColor
     return pinkColor
   }
   function _timeStr() {

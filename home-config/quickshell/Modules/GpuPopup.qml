@@ -122,8 +122,26 @@ PopupCard {
   }
 
   // cheap path (headline stats + VRAM list) every 2s
-  function _refresh() { statsProc.running = true; procProc.running = true }
+  // also re-reads the AMD-only flag so SUPER+ALT+F shows up while the popup is open
+  function _refresh() { statsProc.running = true; procProc.running = true; amdOnlyCheckProc.running = true }
   onOpenChanged: if (open) { _refresh(); utilKick.restart() }
+
+  // dGPU pinned awake; state and toggle live in Vars (also right-click on the pill)
+  property bool gpuPinned: false
+  signal togglePin()
+
+  // "AMD only" (on unless the allow-nvidia flag exists), shared with SUPER+ALT+F
+  property bool amdOnly: true
+  Process {
+    id: amdOnlyCheckProc
+    command: ["bash", "-c", "test -e \"$XDG_RUNTIME_DIR/gpu-allow-nvidia\""]
+    onExited: function(exitCode) { root.amdOnly = exitCode !== 0 }
+  }
+  Process {
+    id: amdOnlyToggleProc
+    command: ["bash", "/home/pulsar/.config/hypr/scripts/gpu_amd_only_toggle.sh"]
+    onExited: amdOnlyCheckProc.running = true
+  }
   Timer {
     interval: 2000
     running: root.open
@@ -160,8 +178,8 @@ PopupCard {
   cardWidth: contentWidth + chrome
   cardHeight: content.implicitHeight + chrome
   maxCardHeight: chrome
-    + 5 * rowH + 6 + 2 + 4 + rowH + maxProcs * rowH
-    + content.spacing * (8 + maxProcs)
+    + 7 * rowH + 6 + 2 + 4 + rowH + maxProcs * rowH
+    + content.spacing * (10 + maxProcs)
 
   Column {
     id: content
@@ -196,11 +214,68 @@ PopupCard {
       }
     }
 
+    // label + switch; the whole row is clickable
+    component ToggleRow: Item {
+      id: tr
+      property string k
+      property bool checked
+      signal toggled()
+      width: content.width
+      height: root.rowH
+      Text {
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        text: tr.k
+        color: root.mainColor
+        font.family: root.fontFamily
+        font.pixelSize: 22
+        font.bold: true
+      }
+      Rectangle {
+        id: track
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: 52
+        height: 26
+        radius: height / 2
+        color: "#2a2a2a"
+        // same blue→pink gradient as the pill borders, faded in when on
+        Rectangle {
+          anchors.fill: parent
+          radius: parent.radius
+          opacity: tr.checked ? 1 : 0
+          Behavior on opacity { NumberAnimation { duration: 150 } }
+          gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: root.gradBottom }
+            GradientStop { position: 1.0; color: root.gradTop }
+          }
+        }
+        Rectangle {
+          width: parent.height - 6
+          height: width
+          radius: width / 2
+          anchors.verticalCenter: parent.verticalCenter
+          x: tr.checked ? parent.width - width - 3 : 3
+          color: tr.checked ? root.bgColor : root.dimColor
+          Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+          Behavior on color { ColorAnimation { duration: 150 } }
+        }
+      }
+      MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        onClicked: tr.toggled()
+      }
+    }
+
     StatRow { k: "Utilization"; v: root.stats ? root.stats.gpuUtil + " %" : "--" }
     StatRow { k: "VRAM";        v: root.stats ? (root.stats.memUsed + " / " + root.stats.memTotal + " MiB") : "--" }
     StatRow { k: "Temperature"; v: root.stats ? root.stats.temp + " °C" : "--" }
     StatRow { k: "Power";       v: root._powerStr() }
     StatRow { k: "Fan";         v: root.stats ? (root._na(root.stats.fan) === "N/A" ? "N/A" : root.stats.fan + " %") : "--" }
+    ToggleRow { k: "Keep awake";       checked: root.gpuPinned;  onToggled: root.togglePin() }
+    ToggleRow { k: "AMD only";         checked: root.amdOnly;    onToggled: amdOnlyToggleProc.running = true }
 
     Item { width: 1; height: 6 }
 
