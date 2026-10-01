@@ -6,33 +6,25 @@
 }:
 
 let
+  # run one app on the dGPU; also undoes the "AMD only" EGL/Vulkan hiding from
+  # hypr/env.lua, which NixOS's built-in offload command wouldn't
   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
     export __NV_PRIME_RENDER_OFFLOAD=1
     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
     export __VK_LAYER_NV_optimus=NVIDIA_only
-    export AQ_DRM_DEVICES="/dev/dri/card1:/dev/dri/card2"
-    export WLR_DRM_DEVICES="/dev/dri/card1:/dev/dri/card2"
-    export __EGL_VENDOR_LIBRARY_FILENAMES="/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json"
-    exec -a "$0" "$@"
-  '';
-
-  # dGPU forced on while on AC so a monitor plugged into its DP port gets
-  # detected; on battery it's allowed to runtime-suspend.
-  # udev's RUN has no PATH, so bash builtins only.
-  nvidia-ac-power = pkgs.writeShellScript "nvidia-ac-power" ''
-    gpu=/sys/bus/pci/devices/0000:01:00.0/power/control
-    [ -e "$gpu" ] || exit 0
-    read -r ac < /sys/class/power_supply/AC0/online
-    if [ "$ac" = 1 ]; then echo on; else echo auto; fi > "$gpu"
+    export __EGL_VENDOR_LIBRARY_FILENAMES=/run/opengl-driver/share/glvnd/egl_vendor.d/10_nvidia.json
+    unset VK_DRIVER_FILES
+    exec "$@"
   '';
 in
 {
   # Enable OpenGL
   hardware.graphics.enable = true;
 
-  # Load nvidia driver for Xorg and Wayland
   environment.systemPackages = [ nvidia-offload ];
+
+  # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = [ "nvidia" ];
 
   boot.kernelParams = [ 
@@ -45,9 +37,8 @@ in
     # Use add|bind to ensure the rule hits regardless of module load timing
     ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{power/control}="auto", ATTR{power/autosuspend_delay_ms}="100"
 
-    # AC-dependent dGPU power; both events re-check AC, so boot order doesn't matter
-    ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", RUN+="${nvidia-ac-power}"
-    ACTION=="add|change", SUBSYSTEM=="power_supply", KERNEL=="AC0", RUN+="${nvidia-ac-power}"
+    # let the video group pin the dGPU on/off runtime PM (quickshell GPU pill right-click)
+    ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", RUN+="${pkgs.coreutils}/bin/chgrp video /sys%p/power/control", RUN+="${pkgs.coreutils}/bin/chmod g+w /sys%p/power/control"
 
     # stable paths for AQ_DRM_DEVICES in hypr/env.lua (cardN numbering changes between boots)
     KERNEL=="card*", KERNELS=="0000:04:00.0", SUBSYSTEM=="drm", SUBSYSTEMS=="pci", SYMLINK+="dri/amd-igpu"

@@ -22,5 +22,6 @@
     ./python.nix
     ./cuda.nix
     ./openrgb.nix
+    ./fingerprint.nix
   ];
 }

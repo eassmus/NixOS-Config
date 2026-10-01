@@ -56,8 +56,11 @@ let
         pyusb crcmod python-periphery spidev pycryptodome crccheck
       ]);
     in
+    # runs from a writable copy: after flashing it saves test captures (*.pgm) to cwd
     p.writeShellScriptBin "goodix-521d-flash" ''
-      cd ${src}
+      tmp=$(mktemp -d)
+      cp -r ${src}/. "$tmp" && chmod -R u+w "$tmp" && cd "$tmp"
+      echo "working dir (test captures land here): $tmp"
       PATH="$PATH:${p.openssl}/bin" exec ${python}/bin/python run_521d.py
     '';
 

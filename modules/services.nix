@@ -10,7 +10,6 @@
     flatpak.enable = true;
     upower.enable = true;
     dbus.enable = true;
-    picom.enable = true;
     openssh.enable = true;
     spice-vdagentd.enable = true;
     blueman.enable = true;
