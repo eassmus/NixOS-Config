@@ -21,6 +21,8 @@
       openFirewall = true;
     };
     asusd.enable = true;
+    gvfs.enable = true;
+    udisks2.enable = true;
     xserver = {
       enable = false;
       xkb = {

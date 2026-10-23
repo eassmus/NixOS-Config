@@ -9,36 +9,54 @@
 {
   environment.systemPackages = with pkgs; [
     #(llama-cpp.override { cudaSupport = true; })
+
+    #Utility
     brightnessctl
-    texliveMedium
-    zotero
     glow
-    poppler-utils
+    wl-kbptr
+    wlrctl
+
+    #Desktop
+    pkgs-unstable.quickshell
+    quickshell
+    hypridle
+
+    #Rust
     rustc
+    cargo
+    rustup
+
+    #Nix
+    inputs.nix-graph.packages.${pkgs.stdenv.hostPlatform.system}.nix-graph
+    nixfmt
+    nixd
+
+    #Editors
     lua5_1
     lua51Packages.luarocks
-    pkgs-unstable.quickshell
-    hypridle
-    psmisc
-    quickshell
-    telegram-desktop
-    omnisharp-roslyn
-    csharp-ls
     inputs.claude-code.packages.${pkgs.system}.default
-    inputs.nix-graph.packages.${pkgs.stdenv.hostPlatform.system}.nix-graph
     mono
     unityhub
-    octave
-    zoxide
+
+    #Desktop Apps
     brave
-    hotspot
+
+    #Network
     openconnect
     networkmanager-openconnect
+
+    texliveMedium
+    zotero
+    poppler-utils
+    psmisc
+    omnisharp-roslyn
+    csharp-ls
+    octave
+    zoxide
+    hotspot
     uutils-coreutils-noprefix
     timg
     feh
-    wl-kbptr
-    wlrctl
     qrrs
     jq
     obs-studio
@@ -62,7 +80,6 @@
     gimp
     slack
     nodejs
-    nixfmt
     mpv
     bat
     hwinfo
@@ -75,8 +92,6 @@
     htop
     gcc13
     vscode
-    cargo
-    rustup
     gnumake
     vim
     neovide
@@ -110,9 +125,9 @@
     typescript-language-server
     lua-language-server
     rust-analyzer
-    nixd
     clang-tools
     luaformatter
+    xleak
   ];
 
   environment.sessionVariables = rec {

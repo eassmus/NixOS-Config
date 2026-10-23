@@ -19,8 +19,17 @@ Scope {
   readonly property color redColor: "#f34646"
   readonly property color bgColor: "#161616"
 
+  // ---------- Workspace alerts ----------
+  // window classes whose attention requests (Hyprland urgency) light their
+  // workspace dot; kitty's comes from Claude Code's bell hook (hypr/scripts/claude_bell.sh)
+  readonly property var alertApps: ["kitty"]
+
   // ---------- Time ----------
-  SystemClock { id: clock; precision: SystemClock.Minutes }
+  // Seconds, not Minutes: a minute-precision clock schedules one wakeup for
+  // the next minute boundary, and that timer doesn't count suspended time,
+  // so after resume (or an NTP correction at boot) the old time could stick
+  // for up to a minute. Per-second ticks catch up within a second.
+  SystemClock { id: clock; precision: SystemClock.Seconds }
   readonly property string time: Qt.formatDateTime(clock.date, "hh:mm AP | dddd | MM-dd-yyyy")
 
   // ---------- Battery (UPower) ----------

@@ -1,19 +1,22 @@
 private.conf
+private.lua
+# Ignore all of home-config except the listed dirs/files. Dirs must be negated
+# as dirs (trailing /): git can't re-include files inside an excluded dir.
 /home-config/*
-!/home-config/Thunar/*
-!/home-config/btop/*
-!/home-config/cava/*
-!/home-config/htop/*
-!/home-config/hypr/*
-!/home-config/kitty/*
-!/home-config/quickshell/*
-!/home-config/swayidle/*
-!/home-config/swaylock/*
-!/home-config/systemd/user/*
-!/home-config/waybar/*
-!/home-config/wlogout/*
-!/home-config/wofi/*
-!/home-config/xfce4/*
-!/home-config/xsettingsd/*
+!/home-config/Thunar/
+!/home-config/btop/
+!/home-config/htop/
+!/home-config/hypr/
+!/home-config/kitty/
+!/home-config/quickshell/
+!/home-config/swayidle/
+!/home-config/swaylock/
+!/home-config/systemd/
+/home-config/systemd/*
+!/home-config/systemd/user/
+!/home-config/waybar/
+!/home-config/wlogout/
+!/home-config/wofi/
+!/home-config/xsettingsd/
 !/home-config/pavicontrol.ini
 !/home-config/starship.toml

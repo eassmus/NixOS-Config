@@ -197,7 +197,7 @@ Scope {
           }
 
           // Workspace group
-          // Workspace pill: arrows + 10 clickable dots (Hyprland-driven)
+          // Workspace pill: clickable dots (Hyprland-driven), 1-10 plus any higher one with windows
           Pill {
             id: workspacePill
             lPad: 12
@@ -207,13 +207,19 @@ Scope {
               onHoveredChanged: wallpaperButton.pillHovered = hovered
             }
 
-            property int wsCount: 10
+            // 1-10 always; a workspace above 10 gets a dot only while it has windows.
+            // Built from a string so the dots only rebuild when that set changes.
+            readonly property string extraWs: Hyprland.workspaces.values
+              .filter(w => w.id > 10 && w.toplevels.values.length > 0)
+              .map(w => w.id).sort((a, b) => a - b).join(",")
+            readonly property var wsIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+              .concat(extraWs ? extraWs.split(",").map(Number) : [])
             property int dotSize: 12
             property int dotSpacing: 10
             property real currentDotHeight: dotSize * 1.9
 
 
-            contentWidth: wsCount * dotSize + (wsCount - 1) * dotSpacing
+            contentWidth: wsIds.length * dotSize + (wsIds.length - 1) * dotSpacing
 
             // Hyprland 0.55+ evaluates dispatch strings as Lua
             function focusWs(ws) {
@@ -235,15 +241,16 @@ Scope {
               spacing: workspacePill.dotSpacing
 
               Repeater {
-                model: workspacePill.wsCount
+                model: workspacePill.wsIds
                 delegate: Item {
                   id: wsItem
-                  property int wsId: index + 1
+                  property int wsId: modelData
                   property bool current: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === wsId
-                  property bool occupied: {
-                    let ws = Hyprland.workspaces.values.find(w => w.id === wsId)
-                    return !!ws && ws.toplevels.values.length > 0
-                  }
+                  property var ws: Hyprland.workspaces.values.find(w => w.id === wsId)
+                  property bool occupied: !!ws && ws.toplevels.values.length > 0
+                  // an allowed window here asked for attention; Hyprland clears it when focused
+                  property bool alert: !!ws && ws.toplevels.values.some(t =>
+                    t.urgent && t.wayland && vars.alertApps.includes(t.wayland.appId))
                   width: workspacePill.dotSize
                   // wrapper is always tall enough for the extended dot so the row's
                   // overall height (and vertical centering) stays stable
@@ -255,7 +262,7 @@ Scope {
                     height: wsItem.current ? workspacePill.currentDotHeight : workspacePill.dotSize
                     radius: width / 2  // capsule when tall, circle when square
                     antialiasing: true
-                    color: wsItem.occupied ? vars.pinkColor : vars.mainColor
+                    color: wsItem.alert ? vars.greenColor : wsItem.occupied ? vars.pinkColor : vars.mainColor
                     Behavior on height { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
 
                     MouseArea {
